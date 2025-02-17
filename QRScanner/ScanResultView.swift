@@ -153,8 +153,26 @@ struct ActionButtonsView: View {
                 }
 
                 if scannedText.lowercased().contains("wifi:") {
-                    ActionButton(icon: "wifi", text: "Connect to WiFi") {
-                        connectToWiFi(scannedText)
+                    // Extract WiFi details
+                    let components = scannedText
+                        .replacingOccurrences(of: "WIFI:", with: "")
+                        .components(separatedBy: ";")
+                        .reduce(into: [String: String]()) { dict, pair in
+                            let parts = pair.components(separatedBy: ":")
+                            if parts.count == 2 {
+                                dict[parts[0]] = parts[1]
+                            }
+                        }
+
+                    let wifiPassword = components["P"] ?? "No Password Found"
+
+//                    ActionButton(icon: "wifi", text: "Connect to WiFi") {
+//                        connectToWiFi(scannedText)
+//                    }
+                    Divider()
+
+                    ActionButton(icon: "doc.on.doc", text: "Copy WiFi Password") {
+                        UIPasteboard.general.string = wifiPassword
                     }
                     Divider()
                 }
@@ -166,7 +184,7 @@ struct ActionButtonsView: View {
                     Divider()
                 }
 
-                ActionButton(icon: "doc.on.doc", text: isCopied ? "Copied" : "Copy") {
+                ActionButton(icon: "doc.on.doc", text: isCopied ? "Copied" : "Copy Data") {
                     UIPasteboard.general.string = scannedText
                     isCopied = true
 
