@@ -8,15 +8,34 @@
 import SwiftUI
 
 struct HistoryView: View {
-    var body: some View {
-        Text("QR Code History Screen (Coming Soon)")
-            .font(.title)
-            .padding()
-    }
-}
+    @State private var history: [String] = UserDefaults.standard.stringArray(forKey: "qrHistory") ?? []
 
-struct HistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        HistoryView()
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(history, id: \.self) { item in
+                    Text(item)
+                        .padding(2)
+                }
+                .onDelete(perform: deleteHistoryItem) // ✅ Swipe to delete
+            }
+            .navigationTitle("Scan History")
+        }
+        .onAppear {
+            loadHistory()
+        }
+    }
+
+    // MARK: - Load History from UserDefaults
+    private func loadHistory() {
+        history = UserDefaults.standard.stringArray(forKey: "qrHistory") ?? []
+    }
+
+    // MARK: - Delete a History Item
+    private func deleteHistoryItem(at offsets: IndexSet) {
+        var storedHistory = UserDefaults.standard.stringArray(forKey: "qrHistory") ?? []
+        storedHistory.remove(atOffsets: offsets)
+        UserDefaults.standard.setValue(storedHistory, forKey: "qrHistory")
+        loadHistory() // Refresh list
     }
 }

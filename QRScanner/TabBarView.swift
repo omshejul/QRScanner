@@ -26,7 +26,7 @@ struct TabBarView: View {
 
             HistoryView()
                 .tabItem {
-                    Label("History", systemImage: "clock")
+                    Label("History", systemImage: "clock.arrow.circlepath")
                 }
 
             SettingsView()
