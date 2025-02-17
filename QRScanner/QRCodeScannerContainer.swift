@@ -23,7 +23,7 @@ struct QRCodeScannerContainer: View {
                         isShowingResult = true
                         playScanSound()
                         turnOffFlashlight()
-                        saveToHistory(code)
+                        saveToScanHistory(code)
                     }
                     .edgesIgnoringSafeArea(.all)
 
@@ -155,13 +155,12 @@ func playScanSound() {
     }
 }
 
-// MARK: - Save QR Code to History
-private func saveToHistory(_ scannedText: String) {
-    var history = UserDefaults.standard.stringArray(forKey: "qrHistory") ?? []
-    
-    // Avoid duplicates
+
+// MARK: - Save to Scan History
+func saveToScanHistory(_ scannedText: String) {
+    var history = UserDefaults.standard.stringArray(forKey: "scanHistory") ?? []
     if !history.contains(scannedText) {
         history.append(scannedText)
-        UserDefaults.standard.setValue(history, forKey: "qrHistory")
+        UserDefaults.standard.setValue(history, forKey: "scanHistory")
     }
 }

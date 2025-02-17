@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		4B1418B22D63635E0015B643 /* SwiftSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418B12D63635E0015B643 /* SwiftSVG */; };
+		4B1418F12D63B77C0015B643 /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418F02D63B77C0015B643 /* SVGKit */; };
+		4B1418F32D63B77C0015B643 /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418F22D63B77C0015B643 /* SVGKitSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +29,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4B1418F32D63B77C0015B643 /* SVGKitSwift in Frameworks */,
+				4B1418F12D63B77C0015B643 /* SVGKit in Frameworks */,
 				4B1418B22D63635E0015B643 /* SwiftSVG in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,6 +75,8 @@
 			name = QRScanner;
 			packageProductDependencies = (
 				4B1418B12D63635E0015B643 /* SwiftSVG */,
+				4B1418F02D63B77C0015B643 /* SVGKit */,
+				4B1418F22D63B77C0015B643 /* SVGKitSwift */,
 			);
 			productName = QRScanner;
 			productReference = 4B1418822D634C2D0015B643 /* QRScanner.app */;
@@ -102,6 +108,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				4B1418B02D63635E0015B643 /* XCRemoteSwiftPackageReference "SwiftSVG" */,
+				4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4B1418832D634C2D0015B643 /* Products */;
@@ -345,6 +352,14 @@
 				kind = branch;
 			};
 		};
+		4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SVGKit/SVGKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -352,6 +367,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4B1418B02D63635E0015B643 /* XCRemoteSwiftPackageReference "SwiftSVG" */;
 			productName = SwiftSVG;
+		};
+		4B1418F02D63B77C0015B643 /* SVGKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKit;
+		};
+		4B1418F22D63B77C0015B643 /* SVGKitSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */;
+			productName = SVGKitSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
