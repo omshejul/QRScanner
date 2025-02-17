@@ -48,7 +48,7 @@ struct QRCodeScannerContainer: View {
                                 .font(.system(size: 32))
                                 .foregroundColor(flashlightEnabled ? .blue : .white)
                                 .padding(24)
-                                .background(flashlightEnabled ? Color.white.opacity(0.7) : Color.black.opacity(0.7))
+                                .background(.ultraThinMaterial)
                                 .clipShape(Circle())
                         }
                         .padding(.bottom, 40) // Adjust position near bottom

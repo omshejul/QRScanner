@@ -102,7 +102,7 @@ struct SectionView: View {
 }
 
 
-// MARK: - Action Buttons with Correct Spacing & Dividers
+// MARK: - Action Buttons with Additional Actions
 struct ActionButtonsView: View {
     let scannedText: String
     @State private var isCopied = false // ✅ Track copy state
@@ -116,11 +116,52 @@ struct ActionButtonsView: View {
                 .padding(.horizontal)
 
             VStack(spacing: 0) {
-                if scannedText.starts(with: "http") {
+                if let url = URL(string: scannedText), scannedText.starts(with: "http") {
                     ActionButton(icon: "safari", text: "Open in Safari") {
+                        UIApplication.shared.open(url)
+                    }
+                    Divider()
+                }
+
+                if scannedText.starts(with: "mailto:") || scannedText.starts(with: "MATMSG:") {
+                    ActionButton(icon: "envelope", text: "Send Email") {
+                        if scannedText.starts(with: "MATMSG:") {
+                            openMATMSGEmail(scannedText)
+                        } else if let url = URL(string: scannedText) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+                }
+
+                if scannedText.starts(with: "tel:") {
+                    ActionButton(icon: "phone", text: "Call") {
                         if let url = URL(string: scannedText) {
                             UIApplication.shared.open(url)
                         }
+                    }
+                    Divider()
+                }
+
+                if scannedText.starts(with: "smsto:") {
+                    ActionButton(icon: "message", text: "Send SMS") {
+                        if let url = URL(string: scannedText) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+                }
+
+                if scannedText.lowercased().contains("wifi:") {
+                    ActionButton(icon: "wifi", text: "Connect to WiFi") {
+                        connectToWiFi(scannedText)
+                    }
+                    Divider()
+                }
+
+                if scannedText.contains("BEGIN:VCARD") {
+                    ActionButton(icon: "person.crop.circle", text: "Save Contact") {
+                        saveContact(scannedText)
                     }
                     Divider()
                 }
@@ -157,6 +198,18 @@ struct ActionButtonsView: View {
             topController.present(activityVC, animated: true, completion: nil)
         }
     }
+
+    // MARK: - Connect to WiFi
+    func connectToWiFi(_ text: String) {
+        print("WiFi QR detected: \(text)")
+
+    }
+
+    // MARK: - Save Contact (vCard)
+    func saveContact(_ vCard: String) {
+        print("Saving vCard: \(vCard)")
+        // vCard import functionality requires Contacts API (not included here)
+    }
 }
 
 // MARK: - Action Button View
@@ -179,6 +232,27 @@ struct ActionButton: View {
                 Spacer()
             }
             .padding()
+        }
+    }
+}
+
+// MARK: - Open Email (MATMSG Format)
+func openMATMSGEmail(_ text: String) {
+    let components = text.replacingOccurrences(of: "MATMSG:", with: "")
+        .components(separatedBy: ";")
+        .reduce(into: [String: String]()) { dict, pair in
+            let parts = pair.components(separatedBy: ":")
+            if parts.count == 2 {
+                dict[parts[0]] = parts[1]
+            }
+        }
+
+    if let to = components["TO"], let subject = components["SUB"], let body = components["BODY"] {
+        let mailtoString = "mailto:\(to)?subject=\(subject)&body=\(body)"
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+
+        if let url = URL(string: mailtoString) {
+            UIApplication.shared.open(url)
         }
     }
 }
