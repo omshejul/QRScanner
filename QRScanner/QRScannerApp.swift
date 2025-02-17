@@ -11,7 +11,7 @@ import SwiftUI
 struct QRScannerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabBarView()
         }
     }
 }
