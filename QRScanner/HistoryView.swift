@@ -14,8 +14,10 @@ struct HistoryView: View {
         NavigationView {
             List {
                 ForEach(history, id: \.self) { item in
-                    Text(item)
-                        .padding(2)
+                    NavigationLink(destination: ScanResultView(scannedText: item) {}) {
+                        Text(item)
+                            .padding(2)
+                    }
                 }
                 .onDelete(perform: deleteHistoryItem) // ✅ Swipe to delete
             }
