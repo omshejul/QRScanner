@@ -18,72 +18,85 @@ struct WiFiQRCodeView: View {
     let encryptionTypes = ["WPA", "WEP", "None"]
 
     var body: some View {
-        VStack(spacing: 20) {
-            TextField("Enter SSID", text: $ssid)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-                .autocapitalization(.none)
-
-            SecureField("Enter Password", text: $password)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-
-            Picker("Encryption Type", selection: $encryption) {
-                ForEach(encryptionTypes, id: \.self) { type in
-                    Text(type).tag(type)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
-
-            if let qrImage = qrImage {
-                Image(uiImage: qrImage)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .padding(10)
-
-                // ✅ Share Button (Only if QR code exists)
-                Button(action: { isSharing = true }) {
-                    HStack {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share QR Code")
-                    }
-                    .frame(maxWidth: .infinity)
+        ScrollView {
+            VStack(spacing: 20) {
+                TextField("Enter SSID", text: $ssid)
                     .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
+                    .background(Color.gray.opacity(0.2))
                     .cornerRadius(10)
+                    .autocapitalization(.none)
+                    .toolbar {
+                        ToolbarItem(placement: .keyboard) {
+                            Button("Done") {
+                                hideKeyboard() // ✅ Manually close keyboard
+                            }
+                        }
+                    }
+
+                SecureField("Enter Password", text: $password)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
+
+                Picker("Encryption Type", selection: $encryption) {
+                    ForEach(encryptionTypes, id: \.self) { type in
+                        Text(type).tag(type)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding()
+
+                if let qrImage = qrImage {
+                    Image(uiImage: qrImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .padding(10)
+
+                    // ✅ Share Button (Only if QR code exists)
+                    Button(action: { isSharing = true }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share QR Code")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .sheet(isPresented: $isSharing) {
+                        ShareSheet(activityItems: [qrImage]) // ✅ Share QR
+                    }
+                }
+
+                Button(action: generateQRCode) {
+                    Text("Generate QR Code")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
                 .padding(.horizontal)
-                .sheet(isPresented: $isSharing) {
-                    ShareSheet(activityItems: [qrImage]) // ✅ Share QR
-                    
-                }
+                .disabled(ssid.isEmpty)
+                
+                Spacer()
             }
-
-            Button(action: generateQRCode) {
-                Text("Generate QR Code")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
-            .disabled(ssid.isEmpty)
-
-            Spacer()
+            .padding()
         }
-        .padding()
+        .onTapGesture {
+            hideKeyboard() // ✅ Hide keyboard when tapping outside
+        }
         .navigationTitle("WiFi")
     }
 
     // MARK: - Generate QR Code
     private func generateQRCode() {
+        hideKeyboard() // ✅ Close keyboard when clicking generate
+
         let wifiString = "WIFI:S:\(ssid);T:\(encryption);P:\(password);H:false;;"
         
         let filter = CIFilter.qrCodeGenerator()

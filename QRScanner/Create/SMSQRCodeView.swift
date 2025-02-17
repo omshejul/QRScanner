@@ -15,64 +15,77 @@ struct SMSQRCodeView: View {
     @State private var isSharing = false // ✅ Share state added
 
     var body: some View {
-        VStack(spacing: 20) {
-            TextField("Phone Number", text: $phoneNumber)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-                .keyboardType(.phonePad)
-
-            TextField("Message", text: $message)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-
-            if let qrImage = qrImage {
-                Image(uiImage: qrImage)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .padding(10)
-
-                // ✅ Share Button (Only if QR code exists)
-                Button(action: { isSharing = true }) {
-                    HStack {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share QR Code")
-                    }
-                    .frame(maxWidth: .infinity)
+        ScrollView {
+            VStack(spacing: 20) {
+                TextField("Phone Number", text: $phoneNumber)
                     .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
+                    .background(Color.gray.opacity(0.2))
                     .cornerRadius(10)
+                    .keyboardType(.phonePad)
+                    .toolbar {
+                        ToolbarItem(placement: .keyboard) {
+                            Button("Done") {
+                                hideKeyboard() // ✅ Manually close keyboard
+                            }
+                        }
+                    }
+
+                TextField("Message", text: $message)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
+
+                if let qrImage = qrImage {
+                    Image(uiImage: qrImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .padding(10)
+
+                    // ✅ Share Button (Only if QR code exists)
+                    Button(action: { isSharing = true }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share QR Code")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .sheet(isPresented: $isSharing) {
+                        ShareSheet(activityItems: [qrImage]) // ✅ Share QR
+                    }
+                }
+
+                Button(action: generateQRCode) {
+                    Text("Generate QR Code")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
                 .padding(.horizontal)
-                .sheet(isPresented: $isSharing) {
-                    ShareSheet(activityItems: [qrImage]) // ✅ Share QR
-        
-                }
-            }
+                .disabled(phoneNumber.isEmpty)
 
-            Button(action: generateQRCode) {
-                Text("Generate QR Code")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                Spacer()
             }
-            .padding(.horizontal)
-            .disabled(phoneNumber.isEmpty)
-
-            Spacer()
+            .padding()
+            .navigationTitle("SMS")
         }
-        .padding()
-        .navigationTitle("SMS")
+        .onTapGesture {
+            hideKeyboard() // ✅ Hide keyboard when tapping outside
+        }
     }
 
     // MARK: - Generate QR Code
     private func generateQRCode() {
+        hideKeyboard() // ✅ Close keyboard when clicking generate
+
         let smsString = "SMSTO:\(phoneNumber):\(message)"
         
         let filter = CIFilter.qrCodeGenerator()

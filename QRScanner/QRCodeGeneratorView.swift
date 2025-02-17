@@ -120,63 +120,76 @@ struct SocialQRCodeView: View {
     @State private var isSharing = false // ✅ State for sharing
 
     var body: some View {
-        VStack {
-            Text("Generate \(platform) QR Code")
-                .font(.title2)
-                .bold()
-                .padding()
-
-            TextField("Enter Username or ID", text: $username)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-
-            Button(action: generateQRCode) {
-                Text("Generate QR Code")
+        ScrollView { // ✅ Prevents gesture conflicts
+            VStack {
+                Text("Generate \(platform) QR Code")
+                    .font(.title)
                     .bold()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
 
-            if let qrImage = generatedQRCode {
-                Image(uiImage: qrImage)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
+                TextField("Enter Username or ID", text: $username)
                     .padding()
-                
-                // ✅ Share Button Below QR Code
-                Button(action: { isSharing = true }) {
-                    HStack {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share QR Code")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
+                    .background(Color.gray.opacity(0.2))
                     .cornerRadius(10)
+                    .toolbar {
+                        ToolbarItem(placement: .keyboard) {
+                            Button("Done") {
+                                hideKeyboard() // ✅ Manually close keyboard
+                            }
+                        }
+                    }
+
+                Button(action: generateQRCode) {
+                    Text("Generate QR Code")
+                        .bold()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
                 .padding(.horizontal)
-                .sheet(isPresented: $isSharing) {
-                    if let qrImage = generatedQRCode {
-                        ShareSheet(activityItems: [qrImage]) // ✅ Sharing functionality
+
+                if let qrImage = generatedQRCode {
+                    Image(uiImage: qrImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .padding()
+
+                    // ✅ Share Button Below QR Code
+                    Button(action: { isSharing = true }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share QR Code")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .sheet(isPresented: $isSharing) {
+                        if let qrImage = generatedQRCode {
+                            ShareSheet(activityItems: [qrImage])
+                        }
                     }
                 }
-            }
 
-            Spacer()
+                Spacer()
+            }
+            .padding()
         }
-        .padding()
+        .onTapGesture {
+            hideKeyboard() // ✅ Hide keyboard when tapping outside
+        }
     }
 
     // MARK: - Generate QR Code
     func generateQRCode() {
+        hideKeyboard() // ✅ Close keyboard when clicking generate
+
         let fullURL = templateURL + username
         let context = CIContext()
         let filter = CIFilter.qrCodeGenerator()
@@ -185,6 +198,8 @@ struct SocialQRCodeView: View {
         if let outputImage = filter.outputImage,
            let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
             generatedQRCode = UIImage(cgImage: cgImage)
+            // ✅ Save generated QR code to Create History
+            saveToCreateHistory(fullURL)
         }
     }
 }
