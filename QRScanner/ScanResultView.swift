@@ -38,7 +38,6 @@ struct ScanResultView: View {
         }
         .navigationTitle("Scan Result")
         .navigationBarTitleDisplayMode(.inline)
-        .background(Color.black.edgesIgnoringSafeArea(.all)) // Dark background for modern look
     }
 
     // MARK: - Generate QR Code Based on Theme
@@ -53,7 +52,7 @@ struct ScanResultView: View {
 
             // ✅ Set QR color based on theme
             let qrColor = isDarkMode ? CIColor.white : CIColor.black
-            let bgColor = CIColor.clear // No background
+            let bgColor = !isDarkMode ? CIColor.white : CIColor.black
 
             colorFilter.setValue(qrColor, forKey: "inputColor0")
             colorFilter.setValue(bgColor, forKey: "inputColor1")
@@ -281,7 +280,7 @@ func generateQRCodeImage(from string: String, isDarkMode: Bool, size: CGFloat = 
 
     // Define colors
     let qrColor = isDarkMode ? CIColor.white : CIColor.black
-    let bgColor = CIColor.clear
+    let bgColor = !isDarkMode ? CIColor.white : CIColor.black
 
     // Apply false color filter
     let colorFilter = CIFilter.falseColor()
