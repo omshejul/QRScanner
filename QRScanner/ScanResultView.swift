@@ -210,7 +210,9 @@ struct ActionButtonsView: View {
                             qrShareURL = tempURL
                             isSharingQR = true
                         }
-                        isGeneratingQR = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isGeneratingQR = false
+                        }
                     }
                 }
                 .sheet(isPresented: $isSharingQR) {
@@ -309,6 +311,32 @@ struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             HStack {
+//                Spacer()
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(.blue)
+
+                Text(text)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 16))
+
+                Spacer()
+            }
+            .padding()
+        }
+        .disabled(text == "Generating QR...")
+    }
+}
+
+
+struct ActionButtonCenter: View {
+    let icon: String
+    let text: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
                 Spacer()
                 Image(systemName: icon)
                     .font(.system(size: 18))
@@ -322,8 +350,6 @@ struct ActionButton: View {
             }
             .padding()
         }
-        .disabled(text == "Generating QR...") // ✅ Disable button when loading
+        .disabled(text == "Generating QR...")
     }
 }
-
-

@@ -147,7 +147,7 @@ struct BASICQRCodeView: View {
                     QRCodeImageView(qrImage: qrImage)
                     // Share QR Button
                 
-                    ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
+                    ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                         if !isGeneratingQR {
                             isGeneratingQR = true
                             generateQRCodeAndShare()
@@ -204,8 +204,11 @@ struct BASICQRCodeView: View {
                 DispatchQueue.main.async {
                     qrShareURL = tempURL
                     isSharingQR = true
-                    isGeneratingQR = false
-                    isQRReady = true // ✅ Enable button after QR is ready
+//                    isGeneratingQR = false
+                    isQRReady = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        isGeneratingQR = false
+                    }
                 }
             } else {
                 DispatchQueue.main.async {
