@@ -27,7 +27,10 @@ struct BASICQRCodeView: View {
     @State private var selectedEncryption = "WPA"
     @State private var isHiddenNetwork = false
     @State private var qrImage: UIImage?
-    @State private var isSharing = false
+    @State private var isSharingQR = false
+    @State private var qrShareURL: URL?
+    @State private var isGeneratingQR = false
+    @State private var isQRReady = false
     @State private var errorMessage: String?
 
     let encryptionOptions = ["WPA", "WEP", "None"]
@@ -141,9 +144,24 @@ struct BASICQRCodeView: View {
 
                 if let qrImage = qrImage {
                     QRCodeImageView(qrImage: qrImage)
+                    // Share QR Button
+                
+                    ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Generating QR..." : "Share QR Code") {
+                        if !isGeneratingQR {
+                            isGeneratingQR = true
+                            generateQRCodeAndShare()
+                        }
+                    }
+                    .sheet(isPresented: $isSharingQR) {
+                        if let qrShareURL = qrShareURL {
+                            ShareSheet(activityItems: [qrShareURL])
+                        }
+                    }
                 }
 
                 GenerateQRButton(action: generateQRCode, isDisabled: isInputInvalid())
+
+                
 
                 Spacer()
             }
@@ -179,6 +197,29 @@ struct BASICQRCodeView: View {
             if let cgimg = context.createCGImage(scaledImage, from: scaledImage.extent) {
                 qrImage = UIImage(cgImage: cgimg)
                 saveToCreateHistory(qrString)
+            }
+        }
+    }
+    
+    // MARK: - Generate QR Code & Save to File Before Sharing
+    private func generateQRCodeAndShare() {
+        isQRReady = false // ✅ Prevent sharing until ready
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                try? image.pngData()?.write(to: tempURL) // ✅ Save image before sharing
+
+                DispatchQueue.main.async {
+                    qrShareURL = tempURL
+                    isSharingQR = true
+                    isGeneratingQR = false
+                    isQRReady = true // ✅ Enable button after QR is ready
+                }
+            } else {
+                DispatchQueue.main.async {
+                    isGeneratingQR = false
+                    isQRReady = false
+                }
             }
         }
     }
@@ -345,17 +386,6 @@ struct QRCodeImageView: View {
                 .frame(width: 200, height: 200)
                 .padding(10)
 
-            Button(action: { isSharing = true }) {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                    Text("Share QR Code")
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
             .padding(.horizontal)
             .sheet(isPresented: $isSharing) {
                 ShareSheet(activityItems: [qrImage])
