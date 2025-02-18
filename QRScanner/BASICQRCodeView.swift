@@ -186,18 +186,9 @@ struct BASICQRCodeView: View {
             return
         }
 
-        let filter = CIFilter.qrCodeGenerator()
-        filter.setValue(qrString.data(using: .utf8), forKey: "inputMessage")
-
-        if let outputImage = filter.outputImage {
-            let context = CIContext()
-            let transform = CGAffineTransform(scaleX: 10, y: 10)
-            let scaledImage = outputImage.transformed(by: transform)
-
-            if let cgimg = context.createCGImage(scaledImage, from: scaledImage.extent) {
-                qrImage = UIImage(cgImage: cgimg)
-                saveToCreateHistory(qrString)
-            }
+        if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+            qrImage = image
+            saveToCreateHistory(qrString)
         }
     }
     
