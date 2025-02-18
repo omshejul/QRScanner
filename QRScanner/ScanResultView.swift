@@ -34,7 +34,7 @@ struct ScanResultView: View {
 
                 Spacer()
             }
-            .padding()
+            .padding(4)
         }
         .navigationTitle("Scan Result")
         .navigationBarTitleDisplayMode(.inline)
@@ -111,6 +111,8 @@ struct ActionButtonsView: View {
     @State private var isSharingData = false
     @State private var isSharingQR = false
     @State private var qrImage: UIImage?
+    @State private var isGeneratingQR = false
+    @State private var qrShareURL: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -121,6 +123,7 @@ struct ActionButtonsView: View {
                 .padding(.horizontal)
 
             VStack(spacing: 0) {
+                
                 if let url = URL(string: scannedText), scannedText.starts(with: "http") {
                     ActionButton(icon: "safari", text: "Open in Safari") {
                         UIApplication.shared.open(url)
@@ -198,13 +201,22 @@ struct ActionButtonsView: View {
                 }
                 Divider()
 
-                ActionButton(icon: "qrcode", text: "Share QR Code") {
-                    qrImage = generateQRCodeImage(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
-                    isSharingQR = true
+                // ✅ Only allow tap when NOT generating QR
+                ActionButton(icon: "qrcode", text: isGeneratingQR ? "Generating QR..." : "Share QR Code") {
+                    if !isGeneratingQR {
+                        isGeneratingQR = true
+                        if let image = generateQRCodeImage(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+                            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                            try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
+                            qrShareURL = tempURL
+                            isSharingQR = true
+                        }
+                        isGeneratingQR = false
+                    }
                 }
                 .sheet(isPresented: $isSharingQR) {
-                    if let qrImage = qrImage {
-                        ShareSheet(activityItems: [qrImage])
+                    if let qrShareURL = qrShareURL {
+                        ShareSheet(activityItems: [qrShareURL]) // ✅ Share Image
                     }
                 }
             }
@@ -213,9 +225,7 @@ struct ActionButtonsView: View {
             .padding(.horizontal)
         }
         .padding(.top, 10)
-    }
-
-    // MARK: - Share Function
+    }    // MARK: - Share Function
     func shareScannedText() {
         let activityItems: [Any] = scannedText.starts(with: "http") ? [URL(string: scannedText)!] : [scannedText]
         let activityVC = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
@@ -239,29 +249,7 @@ struct ActionButtonsView: View {
     }
 }
 
-// MARK: - Action Button View
-struct ActionButton: View {
-    let icon: String
-    let text: String
-    let action: () -> Void
 
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundColor(.blue)
-
-                Text(text)
-                    .foregroundColor(.white)
-                    .font(.system(size: 16))
-
-                Spacer()
-            }
-            .padding()
-        }
-    }
-}
 
 // MARK: - Open Email (MATMSG Format)
 func openMATMSGEmail(_ text: String) {
@@ -283,26 +271,59 @@ func openMATMSGEmail(_ text: String) {
         }
     }
 }
-// ✅ Convert `generateQRCode` to return UIImage
-func generateQRCodeImage(from string: String, isDarkMode: Bool) -> UIImage? {
+// ✅ Ensures image is ready BEFORE sharing
+func generateQRCodeImage(from string: String, isDarkMode: Bool, size: CGFloat = 1024) -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.setValue(string.data(using: .utf8), forKey: "inputMessage")
 
-    if let outputImage = filter.outputImage {
-        let colorFilter = CIFilter.falseColor()
-        colorFilter.setValue(outputImage, forKey: "inputImage")
+    guard let outputImage = filter.outputImage else { return nil }
 
-        let qrColor = isDarkMode ? CIColor.white : CIColor.black
-        let bgColor = CIColor.clear
+    // Define colors
+    let qrColor = isDarkMode ? CIColor.white : CIColor.black
+    let bgColor = CIColor.clear
 
-        colorFilter.setValue(qrColor, forKey: "inputColor0")
-        colorFilter.setValue(bgColor, forKey: "inputColor1")
+    // Apply false color filter
+    let colorFilter = CIFilter.falseColor()
+    colorFilter.setValue(outputImage, forKey: "inputImage")
+    colorFilter.setValue(qrColor, forKey: "inputColor0")
+    colorFilter.setValue(bgColor, forKey: "inputColor1")
 
-        if let cgimg = context.createCGImage(colorFilter.outputImage!, from: outputImage.extent) {
-            return UIImage(cgImage: cgimg)
-        }
+    // Apply proper scaling
+    let transform = CGAffineTransform(scaleX: size / outputImage.extent.width, y: size / outputImage.extent.height)
+    let scaledImage = colorFilter.outputImage!.transformed(by: transform)
+
+    // Convert to UIImage
+    if let cgimg = context.createCGImage(scaledImage, from: scaledImage.extent) {
+        return UIImage(cgImage: cgimg)
     }
 
     return nil
 }
+
+// ✅ Prevents double taps while generating
+struct ActionButton: View {
+    let icon: String
+    let text: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(.blue)
+
+                Text(text)
+                    .foregroundColor(.white)
+                    .font(.system(size: 16))
+
+                Spacer()
+            }
+            .padding()
+        }
+        .disabled(text == "Generating QR...") // ✅ Disable button when loading
+    }
+}
+
+

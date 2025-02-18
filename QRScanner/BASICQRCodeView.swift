@@ -42,14 +42,14 @@ struct BASICQRCodeView: View {
                                keyboardType: .emailAddress)
                     
                     InputField(title: "Enter Subject (Optional)",
-                               info: "You can add a subject for the email. This field is optional.",
+                               info: "You can add a subject for the email.",
                                text: Binding(
                                     get: { optionalFields["subject"] ?? "" },
                                     set: { optionalFields["subject"] = $0 }
                                ))
 
                     InputField(title: "Enter Body (Optional)",
-                               info: "Write the content of the email. This field is optional.",
+                               info: "Write the content of the email.",
                                text: Binding(
                                     get: { optionalFields["body"] ?? "" },
                                     set: { optionalFields["body"] = $0 }
@@ -62,8 +62,8 @@ struct BASICQRCodeView: View {
                                text: $primaryInput,
                                keyboardType: .phonePad)
 
-                    InputField(title: "Enter Message",
-                               info: "This is optional.",
+                    InputField(title: "Enter Message (Optional)",
+                               info: "",
                                text: Binding(
                                     get: { optionalFields["message"] ?? "" },
                                     set: { optionalFields["message"] = $0 }
@@ -100,12 +100,12 @@ struct BASICQRCodeView: View {
                 }
 
                 else if type == .location {
-                    InputField(title: "Enter Latitude (-90 to 90)",
+                    InputField(title: "Enter Latitude",
                                info: "Must be between -90 and 90.",
                                text: $primaryInput,
                                keyboardType: .decimalPad)
 
-                    InputField(title: "Enter Longitude (-180 to 180)",
+                    InputField(title: "Enter Longitude",
                                info: "Must be between -180 and 180.",
                                text: $secondaryInput,
                                keyboardType: .decimalPad)
@@ -147,7 +147,7 @@ struct BASICQRCodeView: View {
 
                 Spacer()
             }
-            .padding()
+            .padding(4)
             .toolbar {
                 ToolbarItem(placement: .keyboard) {
                     Button("Done") { hideKeyboard() }
