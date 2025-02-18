@@ -11,7 +11,8 @@ import AVFoundation
 struct QRCodeScannerContainer: View {
     @State private var scannedCode: String? = nil
     @State private var isShowingResult = false
-    @State private var flashlightEnabled = false // ✅ Flash toggle state
+    @State private var flashlightEnabled = false
+    @State private var overlayScale: CGFloat = 1.0
 
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     var body: some View {
@@ -27,31 +28,50 @@ struct QRCodeScannerContainer: View {
                     }
                     .edgesIgnoringSafeArea(.all)
 
-                    // Scanner Overlay with Four L-Shaped Corners
+                    // ✅ Scanner Overlay with L-Shaped Corners
                     GeometryReader { proxy in
                         ZStack {
                             ScannerCorner(rotation: 0, position: getCornerPosition(.topLeading, proxy: proxy))
                             ScannerCorner(rotation: 90, position: getCornerPosition(.topTrailing, proxy: proxy))
                             ScannerCorner(rotation: 180, position: getCornerPosition(.bottomTrailing, proxy: proxy))
                             ScannerCorner(rotation: 270, position: getCornerPosition(.bottomLeading, proxy: proxy))
+
+                            // ✅ Center Pulsing Overlay (Fixed)
+                            Image("blank")
+                                .resizable()
+                                .scaledToFit()
+                                .opacity(0.1)
+                                .frame(width: 100, height: 100)
+                                .scaleEffect(overlayScale)
+                                .onAppear {
+                                    overlayScale = 1.05 // ✅ Ensure stable scale
+                                    withAnimation(
+                                        Animation.easeInOut(duration: 1.2)
+                                            .repeatForever(autoreverses: true)
+                                    ) {
+                                        overlayScale = 1.1
+                                    }
+                                }
                         }
                         .frame(width: scanBoxSize, height: scanBoxSize)
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
                     }
                     .frame(width: scanBoxSize, height: scanBoxSize)
 
-                    // ✅ Flashlight Toggle Button
-                    VStack {
-                        Spacer()
-                        Button(action: toggleFlashlight) {
-                            Image(systemName: flashlightEnabled ? "flashlight.on.fill" : "flashlight.off.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(flashlightEnabled ? .blue : .white)
-                                .padding(24)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
+                    // ✅ Flashlight Toggle Button (Better Positioning)
+                    GeometryReader { proxy in
+                        VStack {
+                            Spacer()
+                            Button(action: toggleFlashlight) {
+                                Image(systemName: flashlightEnabled ? "flashlight.on.fill" : "flashlight.off.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(flashlightEnabled ? .blue : .white)
+                                    .padding(24)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(Circle())
+                            }
+                            .position(x: proxy.size.width / 2, y: proxy.size.height - 80) // Center at bottom
                         }
-                        .padding(.bottom, 40) // Adjust position near bottom
                     }
                 }
             }
@@ -59,7 +79,7 @@ struct QRCodeScannerContainer: View {
                 ScanResultView(scannedText: scannedCode ?? "") {
                     isShowingResult = false
                     scannedCode = nil
-                    turnOffFlashlight() // Ensure flash turns off when exiting scanner
+                    turnOffFlashlight()
                 }
             }
         }

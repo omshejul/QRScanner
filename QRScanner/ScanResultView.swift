@@ -315,7 +315,7 @@ struct ActionButton: View {
                     .foregroundColor(.blue)
 
                 Text(text)
-                    .foregroundColor(.white)
+                    .foregroundColor(.blue)
                     .font(.system(size: 16))
 
                 Spacer()
