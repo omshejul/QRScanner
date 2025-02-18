@@ -32,24 +32,41 @@ struct SettingsView: View {
             }
 
             // MARK: - About Me
-            Section(header: Text("About")) {
+            Section(header: Text("About").font(.caption).foregroundColor(.gray)) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("QR Scanner and Generator")
-                        .font(.headline)
-                    Text("Open-Sourced")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                    Text("Version 1.0.0")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                    Text("Developed by Om Shejul")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                    HStack {
+                        Text("QR Scanner & Generator")
+                            .font(.headline)
+                    }
+
+                    HStack {
+                        Text("Version 1.0.0")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+
+                    HStack {
+                        Text("Developed by Om Shejul")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                 }
                 .padding(.vertical, 5)
 
-                Link("Visit Website", destination: URL(string: "https://omshejul.com")!)
-                Link("Email Me", destination: URL(string: "mailto:qr@omshejul.com")!)
+                // MARK: - Links
+                Link(destination: URL(string: "https://omshejul.com")!) {
+                    HStack {
+                        Image(systemName: "globe")
+                        Text("Visit Website")
+                    }
+                }
+
+                Link(destination: URL(string: "mailto:qr@omshejul.com")!) {
+                    HStack {
+                        Image(systemName: "envelope.fill")
+                        Text("Email Me")
+                    }
+                }
             }
         }
         .navigationTitle("Settings")
