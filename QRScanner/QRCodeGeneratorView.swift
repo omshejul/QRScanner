@@ -9,33 +9,18 @@ import SwiftUI
 
 struct QRCodeGeneratorView: View {
     var body: some View {
-        NavigationView {
+        NavigationStack { // ✅ REPLACED NavigationView with NavigationStack
             List {
                 // MARK: - Basic Section
                 Section(header: Text("SIMPLE").font(.caption).foregroundColor(.gray)) {
-                    NavigationLink(destination: WebURLQRCodeView()) {
-                        QRCodeOptionRow(icon: "link", title: "Web URL")
+                    ForEach(QRType.allCases.filter { $0 != .contact }, id: \.rawValue) { type in
+                        NavigationLink(destination: BASICQRCodeView(type: type)) {
+                            QRCodeOptionRow(icon: getSystemIcon(for: type), title: type.rawValue)
+                        }
                     }
-                    NavigationLink(destination: ContactQRCodeView()) {
+                    
+                    NavigationLink(destination: BASICQRCodeView(type: .contact)) {
                         QRCodeOptionRow(icon: "person.crop.circle", title: "Contact")
-                    }
-                    NavigationLink(destination: WiFiQRCodeView()) {
-                        QRCodeOptionRow(icon: "wifi", title: "WiFi")
-                    }
-                    NavigationLink(destination: TextQRCodeView()) {
-                        QRCodeOptionRow(icon: "doc.text", title: "Text")
-                    }
-                    NavigationLink(destination: EmailQRCodeView()) {
-                        QRCodeOptionRow(icon: "envelope", title: "Email")
-                    }
-                    NavigationLink(destination: SMSQRCodeView()) {
-                        QRCodeOptionRow(icon: "message", title: "SMS")
-                    }
-                    NavigationLink(destination: PhoneQRCodeView()) {
-                        QRCodeOptionRow(icon: "phone", title: "Phone")
-                    }
-                    NavigationLink(destination: LocationQRCodeView()) {
-                        QRCodeOptionRow(icon: "location", title: "Location")
                     }
                 }
 
@@ -90,6 +75,22 @@ struct QRCodeOptionRowSocial: View {
         .padding(.vertical, 4) // Adjusts row height
     }
 }
+
+// MARK: - Helper Function to Get Icons
+func getSystemIcon(for type: QRType) -> String {
+    switch type {
+    case .wifi: return "wifi"
+    case .web: return "link"
+    case .text: return "doc.text"
+    case .email: return "envelope"
+    case .phone: return "phone"
+    case .sms: return "message"
+    case .location: return "location"
+    case .contact: return "person.crop.circle"
+    }
+}
+
+
 // MARK: - QR Code Option Row
 struct QRCodeOptionRow: View {
     let icon: String

@@ -13,27 +13,29 @@ struct ScanResultView: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
-            // Use dynamic theme for QR code
-            generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
-                .resizable()
-                .interpolation(.none)
-                .scaledToFit()
-                .frame(width: 200, height: 200) // Increased QR size
-                .padding(20) // Extra padding around QR code
+        ScrollView {
+            VStack(spacing: 10) {
+                // QR Code Image
+                generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
+                    .resizable()
+                    .interpolation(.none)
+                    .scaledToFit()
+                    .frame(width: 200, height: 200)
+                    .padding(20)
 
-            // Data Section
-            SectionView(title: "DATA", content: scannedText)
+                // Data Section
+                SectionView(title: "DATA", content: scannedText)
 
-            // Type Section
-            SectionView(title: "TYPE", content: determineQRType(from: scannedText))
+                // Type Section
+                SectionView(title: "TYPE", content: determineQRType(from: scannedText))
 
-            // Action Buttons
-            ActionButtonsView(scannedText: scannedText)
+                // Action Buttons
+                ActionButtonsView(scannedText: scannedText)
 
-            Spacer()
+                Spacer()
+            }
+            .padding()
         }
-        .padding(0.5)
         .navigationTitle("Scan Result")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color.black.edgesIgnoringSafeArea(.all)) // Dark background for modern look
@@ -105,7 +107,10 @@ struct SectionView: View {
 // MARK: - Action Buttons with Additional Actions
 struct ActionButtonsView: View {
     let scannedText: String
-    @State private var isCopied = false // ✅ Track copy state
+    @State private var isCopied = false
+    @State private var isSharingData = false
+    @State private var isSharingQR = false
+    @State private var qrImage: UIImage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -125,11 +130,7 @@ struct ActionButtonsView: View {
 
                 if scannedText.starts(with: "mailto:") || scannedText.starts(with: "MATMSG:") {
                     ActionButton(icon: "envelope", text: "Send Email") {
-                        if scannedText.starts(with: "MATMSG:") {
-                            openMATMSGEmail(scannedText)
-                        } else if let url = URL(string: scannedText) {
-                            UIApplication.shared.open(url)
-                        }
+                        openMATMSGEmail(scannedText)
                     }
                     Divider()
                 }
@@ -153,7 +154,6 @@ struct ActionButtonsView: View {
                 }
 
                 if scannedText.lowercased().contains("wifi:") {
-                    // Extract WiFi details
                     let components = scannedText
                         .replacingOccurrences(of: "WIFI:", with: "")
                         .components(separatedBy: ";")
@@ -165,11 +165,6 @@ struct ActionButtonsView: View {
                         }
 
                     let wifiPassword = components["P"] ?? "No Password Found"
-
-//                    ActionButton(icon: "wifi", text: "Connect to WiFi") {
-//                        connectToWiFi(scannedText)
-//                    }
-                    Divider()
 
                     ActionButton(icon: "doc.on.doc", text: "Copy WiFi Password") {
                         UIPasteboard.general.string = wifiPassword
@@ -188,15 +183,29 @@ struct ActionButtonsView: View {
                     UIPasteboard.general.string = scannedText
                     isCopied = true
 
-                    // ✅ Reset back to "Copy" after 2 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                         isCopied = false
                     }
                 }
                 Divider()
 
-                ActionButton(icon: "square.and.arrow.up", text: "Share") {
-                    shareScannedText()
+                // ✅ Added Two Share Options: Data & QR Code
+                ActionButton(icon: "square.and.arrow.up", text: "Share Data") {
+                    isSharingData = true
+                }
+                .sheet(isPresented: $isSharingData) {
+                    ShareSheet(activityItems: [scannedText])
+                }
+                Divider()
+
+                ActionButton(icon: "qrcode", text: "Share QR Code") {
+                    qrImage = generateQRCodeImage(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
+                    isSharingQR = true
+                }
+                .sheet(isPresented: $isSharingQR) {
+                    if let qrImage = qrImage {
+                        ShareSheet(activityItems: [qrImage])
+                    }
                 }
             }
             .background(Color(UIColor.systemGray6))
@@ -273,4 +282,27 @@ func openMATMSGEmail(_ text: String) {
             UIApplication.shared.open(url)
         }
     }
+}
+// ✅ Convert `generateQRCode` to return UIImage
+func generateQRCodeImage(from string: String, isDarkMode: Bool) -> UIImage? {
+    let context = CIContext()
+    let filter = CIFilter.qrCodeGenerator()
+    filter.setValue(string.data(using: .utf8), forKey: "inputMessage")
+
+    if let outputImage = filter.outputImage {
+        let colorFilter = CIFilter.falseColor()
+        colorFilter.setValue(outputImage, forKey: "inputImage")
+
+        let qrColor = isDarkMode ? CIColor.white : CIColor.black
+        let bgColor = CIColor.clear
+
+        colorFilter.setValue(qrColor, forKey: "inputColor0")
+        colorFilter.setValue(bgColor, forKey: "inputColor1")
+
+        if let cgimg = context.createCGImage(colorFilter.outputImage!, from: outputImage.extent) {
+            return UIImage(cgImage: cgimg)
+        }
+    }
+
+    return nil
 }
