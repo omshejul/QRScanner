@@ -201,7 +201,7 @@ struct ActionButtonsView: View {
                 Divider()
 
                 // ✅ Only allow tap when NOT generating QR
-                ActionButton(icon: "qrcode", text: isGeneratingQR ? "Generating QR..." : "Share QR Code") {
+                ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                     if !isGeneratingQR {
                         isGeneratingQR = true
                         if let image = generateQRCodeImage(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
@@ -309,6 +309,7 @@ struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             HStack {
+                Spacer()
                 Image(systemName: icon)
                     .font(.system(size: 18))
                     .foregroundColor(.blue)

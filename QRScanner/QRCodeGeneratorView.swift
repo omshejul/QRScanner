@@ -118,10 +118,13 @@ struct SocialQRCodeView: View {
     
     @State private var username: String = ""
     @State private var generatedQRCode: UIImage?
-    @State private var isSharing = false // ✅ State for sharing
+    @State private var isSharingQR = false
+    @State private var qrShareURL: URL?
+    @State private var isGeneratingQR = false
+    @State private var isQRReady = false
 
     var body: some View {
-        ScrollView { // ✅ Prevents gesture conflicts
+        ScrollView {
             VStack {
                 Text("Generate \(platform) QR Code")
                     .font(.title)
@@ -134,21 +137,11 @@ struct SocialQRCodeView: View {
                     .toolbar {
                         ToolbarItem(placement: .keyboard) {
                             Button("Done") {
-                                hideKeyboard() // ✅ Manually close keyboard
+                                hideKeyboard()
                             }
                         }
                     }
 
-                Button(action: generateQRCode) {
-                    Text("Generate QR Code")
-                        .bold()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
 
                 if let qrImage = generatedQRCode {
                     Image(uiImage: qrImage)
@@ -158,49 +151,71 @@ struct SocialQRCodeView: View {
                         .frame(width: 200, height: 200)
                         .padding()
 
-                    // ✅ Share Button Below QR Code
-                    Button(action: { isSharing = true }) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Share QR Code")
+                    // ✅ Share QR Button
+                    ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
+                        if !isGeneratingQR {
+                            isGeneratingQR = true
+                            generateQRCodeAndShare()
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
                     }
-                    .padding(.horizontal)
-                    .sheet(isPresented: $isSharing) {
-                        if let qrImage = generatedQRCode {
-                            ShareSheet(activityItems: [qrImage])
+                    .sheet(isPresented: $isSharingQR) {
+                        if let qrShareURL = qrShareURL {
+                            ShareSheet(activityItems: [qrShareURL])
                         }
                     }
                 }
+                Button(action: generateQRCode) {
+                    Text("Generate QR Code")
+                        .bold()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.vertical)
 
                 Spacer()
             }
             .padding()
         }
         .onTapGesture {
-            hideKeyboard() // ✅ Hide keyboard when tapping outside
+            hideKeyboard()
         }
     }
 
     // MARK: - Generate QR Code
     func generateQRCode() {
-        hideKeyboard() // ✅ Close keyboard when clicking generate
-
+        hideKeyboard()
         let fullURL = templateURL + username
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        filter.setValue(fullURL.data(using: .utf8), forKey: "inputMessage")
 
-        if let outputImage = filter.outputImage,
-           let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
-            generatedQRCode = UIImage(cgImage: cgImage)
-            // ✅ Save generated QR code to Create History
+        if let image = generateQRCodeImage(from: fullURL, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+            generatedQRCode = image
+            isQRReady = true // ✅ QR is ready for sharing
             saveToCreateHistory(fullURL)
+        }
+    }
+
+    // MARK: - Generate QR Code & Save to File Before Sharing
+    func generateQRCodeAndShare() {
+        isQRReady = false
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                try? image.pngData()?.write(to: tempURL)
+
+                DispatchQueue.main.async {
+                    qrShareURL = tempURL
+                    isSharingQR = true
+                    isGeneratingQR = false
+                    isQRReady = true
+                }
+            } else {
+                DispatchQueue.main.async {
+                    isGeneratingQR = false
+                    isQRReady = false
+                }
+            }
         }
     }
 }

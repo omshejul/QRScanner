@@ -125,7 +125,8 @@ struct BASICQRCodeView: View {
                 else if type == .phone {
                     InputField(title: getPlaceholder(),
                                info: "Enter the phone number with or without a country code",
-                               text: $primaryInput)
+                               text: $primaryInput,
+                               keyboardType: .phonePad)
                 }
 
                 else {
@@ -146,7 +147,7 @@ struct BASICQRCodeView: View {
                     QRCodeImageView(qrImage: qrImage)
                     // Share QR Button
                 
-                    ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Generating QR..." : "Share QR Code") {
+                    ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                         if !isGeneratingQR {
                             isGeneratingQR = true
                             generateQRCodeAndShare()
@@ -193,7 +194,7 @@ struct BASICQRCodeView: View {
     }
     
     // MARK: - Generate QR Code & Save to File Before Sharing
-    private func generateQRCodeAndShare() {
+    func generateQRCodeAndShare() {
         isQRReady = false // ✅ Prevent sharing until ready
         DispatchQueue.global(qos: .userInitiated).async {
             if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
@@ -287,7 +288,7 @@ struct BASICQRCodeView: View {
     private func getPlaceholder() -> String {
         switch type {
         case .wifi: return "Enter SSID"
-        case .web: return "Enter Website URL"
+        case .web: return "https://omshejul.com"
         case .text: return "Enter Text"
         case .email: return "Enter Email"
         case .phone: return "Enter Phone Number"
