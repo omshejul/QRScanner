@@ -12,7 +12,7 @@ QRScanner is an iOS application designed to scan and generate QR codes. It provi
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/omshejul/QRScanner.git
    ```
 2. Open the project in Xcode:
    ```bash
