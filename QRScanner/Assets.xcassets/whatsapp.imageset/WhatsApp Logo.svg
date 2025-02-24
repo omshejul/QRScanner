@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="36"
+   height="36"
+   fill="#007aff"
+   viewBox="0 0 256 256"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="WhatsApp Logo.svg"
+   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="28.027778"
+     inkscape:cx="17.982161"
+     inkscape:cy="18"
+     inkscape:window-width="3840"
+     inkscape:window-height="2014"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <path
+     id="path3"
+     style="opacity:1"
+     d="M 128 24 A 104 104 0 0 0 36.180556 176.875 L 24.833333 210.93056 A 16 16 0 0 0 45.069444 231.16667 L 79.125 219.81944 A 104 104 0 1 0 128 24 z M 141.05556 40.972222 A 88 88 0 0 1 128 216 A 87.87 87.87 0 0 1 83.944444 204.19444 A 8 8 0 0 0 77.402778 203.51389 L 40 216 L 52.472222 178.59722 A 8 8 0 0 0 51.805556 172.05556 A 88 88 0 0 1 141.05556 40.972222 z " />
+  <path
+     d="M 153.54205,179.04458 A 76.673976,76.673976 0 0 1 76.953172,102.45571 25.529626,25.529626 0 0 1 97.472609,77.415398 l 12.211671,24.465892 -10.392685,15.4667 a 8.5098752,8.5098752 0 0 0 -0.776526,7.98864 60.069082,60.069082 0 0 0 32.071591,32.0716 8.5098752,8.5098752 0 0 0 8.06311,-0.70207 l 15.54116,-10.36077 24.46589,12.21167 a 25.529626,25.529626 0 0 1 -25.11477,20.48752 z"
+     id="path2"
+     style="opacity:1;stroke-width:1" />
+</svg>
