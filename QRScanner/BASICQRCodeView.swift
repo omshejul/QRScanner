@@ -196,28 +196,46 @@ struct BASICQRCodeView: View {
     // MARK: - Generate QR Code & Save to File Before Sharing
     func generateQRCodeAndShare() {
         isQRReady = false // ✅ Prevent sharing until ready
-        DispatchQueue.global(qos: .userInitiated).async {
-            if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
-                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
-                try? image.pngData()?.write(to: tempURL) // ✅ Save image before sharing
+        isGeneratingQR = true // ✅ Ensure UI updates immediately
 
-                DispatchQueue.main.async {
-                    qrShareURL = tempURL
-                    isSharingQR = true
-//                    isGeneratingQR = false
-                    isQRReady = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        isGeneratingQR = false
-                    }
-                }
+        DispatchQueue.main.async {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first else {
+                isGeneratingQR = false
+                return
+            }
+
+            // ✅ Correctly determine dark mode
+            let isDark: Bool
+            if window.overrideUserInterfaceStyle == .unspecified {
+                isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
             } else {
-                DispatchQueue.main.async {
-                    isGeneratingQR = false
-                    isQRReady = false
+                isDark = window.overrideUserInterfaceStyle == .dark
+            }
+
+            DispatchQueue.global(qos: .userInitiated).async {
+                if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: isDark) {
+                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                    try? image.pngData()?.write(to: tempURL) // ✅ Save image before sharing
+
+                    DispatchQueue.main.async {
+                        qrShareURL = tempURL
+                        isSharingQR = true
+                        isQRReady = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isGeneratingQR = false
+                        }
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        isGeneratingQR = false
+                        isQRReady = false
+                    }
                 }
             }
         }
     }
+
 
     private func generateQRString() -> String {
         switch type {

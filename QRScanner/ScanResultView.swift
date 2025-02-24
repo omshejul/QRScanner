@@ -204,17 +204,31 @@ struct ActionButtonsView: View {
                 ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                     if !isGeneratingQR {
                         isGeneratingQR = true
-                        if let image = generateQRCodeImage(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
-                            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
-                            try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
-                            qrShareURL = tempURL
-                            isSharingQR = true
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first {
+                            // ✅ Correctly determine dark mode
+                            let isDark: Bool
+                            if window.overrideUserInterfaceStyle == .unspecified {
+                                isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+                            } else {
+                                isDark = window.overrideUserInterfaceStyle == .dark
+                            }
+
+                            // ✅ Generate QR Code with correct theme
+                            if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
+                                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                                try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
+                                qrShareURL = tempURL
+                                isSharingQR = true
+                            }
                         }
+                        // ✅ Ensure `isGeneratingQR` resets even if `windowScene` is nil
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             isGeneratingQR = false
                         }
                     }
                 }
+
                 .sheet(isPresented: $isSharingQR) {
                     if let qrShareURL = qrShareURL {
                         ShareSheet(activityItems: [qrShareURL]) // ✅ Share Image

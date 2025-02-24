@@ -25,9 +25,19 @@ struct SettingsView: View {
                 
                 // MARK: - Appearance Settings
                 Section(header: Text("Appearance")) {
-                    Picker("Theme", selection: $themeMode) {
-                        ForEach(themeOptions, id: \.self) { option in
-                            Text(option)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Picker("Theme", selection: $themeMode) {
+                            ForEach(themeOptions, id: \.self) { option in
+                                Text(option)
+                            }
+                        }
+                        HStack(spacing: 5) {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.gray)
+
+                            Text("Theme affects QR code's appearance.")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
                         }
                     }
                 }

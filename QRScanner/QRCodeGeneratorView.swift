@@ -26,30 +26,32 @@ struct QRCodeGeneratorView: View {
 
                 // MARK: - Social Section
                 Section(header: Text("SOCIAL").font(.caption).foregroundColor(.gray)) {
-                    NavigationLink(destination: SocialQRCodeView(platform: "Facebook", templateURL: "https://www.facebook.com/")) {
+                    //icons phosphoricons.com
+                    NavigationLink(destination: SocialQRCodeView(platform: "Facebook", templateURL: "https://www.facebook.com/", inputPlaceholder: "Enter Facebook Username", exampleInput: "john.doe")) {
                         QRCodeOptionRowSocial(imageName: "facebook", title: "Facebook")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "Instagram", templateURL: "https://www.instagram.com/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "Instagram", templateURL: "https://www.instagram.com/", inputPlaceholder: "Enter Instagram Username", exampleInput: "john_doe")) {
                         QRCodeOptionRowSocial(imageName: "instagram", title: "Instagram")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "WhatsApp", templateURL: "https://wa.me/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "WhatsApp", templateURL: "https://wa.me/", inputPlaceholder: "Enter Phone Number", exampleInput: "+1234567890")) {
                         QRCodeOptionRowSocial(imageName: "whatsapp", title: "WhatsApp")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "TikTok", templateURL: "https://www.tiktok.com/@")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "TikTok", templateURL: "https://www.tiktok.com/@", inputPlaceholder: "Enter TikTok Username", exampleInput: "tiktok_user")) {
                         QRCodeOptionRowSocial(imageName: "tiktok", title: "TikTok")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "X", templateURL: "https://twitter.com/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "X", templateURL: "https://twitter.com/", inputPlaceholder: "Enter X (Twitter) Handle, with @", exampleInput: "@elonmusk")) {
                         QRCodeOptionRowSocial(imageName: "twitter", title: "X")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "Snapchat", templateURL: "https://www.snapchat.com/add/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "Snapchat", templateURL: "https://www.snapchat.com/add/", inputPlaceholder: "Enter Snapchat Username", exampleInput: "snap_user")) {
                         QRCodeOptionRowSocial(imageName: "snapchat", title: "Snapchat")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "Telegram", templateURL: "https://t.me/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "Telegram", templateURL: "https://t.me/", inputPlaceholder: "Enter Telegram Username", exampleInput: "telegram_user")) {
                         QRCodeOptionRowSocial(imageName: "telegram", title: "Telegram")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "Spotify", templateURL: "https://open.spotify.com/user/")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "Spotify", templateURL: "https://open.spotify.com/user/", inputPlaceholder: "Enter Spotify Username", exampleInput: "spotifyuser123")) {
                         QRCodeOptionRowSocial(imageName: "spotify", title: "Spotify")
                     }
+
                 }
             }
             .navigationTitle("Generator")
@@ -115,6 +117,8 @@ struct QRCodeOptionRow: View {
 struct SocialQRCodeView: View {
     let platform: String
     let templateURL: String
+    let inputPlaceholder: String
+    let exampleInput: String
     
     @State private var username: String = ""
     @State private var generatedQRCode: UIImage?
@@ -129,19 +133,26 @@ struct SocialQRCodeView: View {
                 Text("Generate \(platform) QR Code")
                     .font(.title)
                     .bold()
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                TextField("Enter Username or ID", text: $username)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(10)
-                    .toolbar {
-                        ToolbarItem(placement: .keyboard) {
-                            Button("Done") {
-                                hideKeyboard()
+                // ✅ Input Field with Placeholder & Example Text
+                VStack(alignment: .leading, spacing: 5) {
+                    TextField(inputPlaceholder, text: $username)
+                        .padding()
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(10)
+                        .toolbar {
+                            ToolbarItem(placement: .keyboard) {
+                                Button("Done") {
+                                    hideKeyboard()
+                                }
                             }
                         }
-                    }
-
+                    
+                    Text("e.g., \(exampleInput)") // ✅ Example text
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                }
 
                 if let qrImage = generatedQRCode {
                     Image(uiImage: qrImage)
