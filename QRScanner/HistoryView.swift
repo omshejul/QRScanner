@@ -6,9 +6,24 @@
 //
 
 import SwiftUI
+import AVFoundation
+
+struct ScanHistoryItem: Identifiable, Hashable {
+    let id = UUID()
+    let text: String
+    let type: AVMetadataObject.ObjectType
+    
+    static func == (lhs: ScanHistoryItem, rhs: ScanHistoryItem) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
 
 struct HistoryView: View {
-    @State private var scanHistory: [String] = UserDefaults.standard.stringArray(forKey: "scanHistory") ?? []
+    @State private var scanHistory: [ScanHistoryItem] = []
     @State private var createHistory: [String] = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
 
     var body: some View {
@@ -17,20 +32,25 @@ struct HistoryView: View {
                 // MARK: - Scan History Section
                 if !scanHistory.isEmpty {
                     Section(header: Text("Scan History").font(.caption).foregroundColor(.gray)) {
-                        ForEach(scanHistory, id: \.self) { scannedItem in
-                            NavigationLink(destination: ScanResultView(scannedText: scannedItem) {}) {
+                        ForEach(scanHistory) { item in
+                            NavigationLink(destination: ScanResultView(scannedText: item.text, barcodeType: item.type) {}) {
                                 HStack {
-                                    Image(systemName: getIcon(for: scannedItem)) // ✅ Show icon
+                                    Image(systemName: getIcon(for: item.text))
                                         .foregroundColor(.blue)
 
-                                    Text(scannedItem)
-                                        .lineLimit(1) // ✅ Prevent wrapping
-                                        .truncationMode(.tail) // ✅ Show "..."
-                                        .padding(2)
+                                    VStack(alignment: .leading) {
+                                        Text(item.text)
+                                            .lineLimit(1)
+                                            .truncationMode(.tail)
+                                        Text(getBarcodeTypeName(item.type))
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding(.vertical, 2)
                                 }
                             }
                         }
-                        .onDelete(perform: deleteScanHistoryItem) // ✅ Swipe to delete scan history
+                        .onDelete(perform: deleteScanHistoryItem)
                     }
                 }
 
@@ -38,62 +58,112 @@ struct HistoryView: View {
                 if !createHistory.isEmpty {
                     Section(header: Text("Create History").font(.caption).foregroundColor(.gray)) {
                         ForEach(createHistory, id: \.self) { createdItem in
-                            NavigationLink(destination: ScanResultView(scannedText: createdItem) {}) {
+                            NavigationLink(destination: ScanResultView(scannedText: createdItem, barcodeType: .qr) {}) {
                                 HStack {
-                                    Image(systemName: getIcon(for: createdItem)) // ✅ Show icon
-                                        .foregroundColor(.green)
-
+                                    Image(systemName: getIcon(for: createdItem))
+                                        .foregroundColor(.blue)
+                                    
                                     Text(createdItem)
-                                        .lineLimit(1) // ✅ Prevent wrapping
-                                        .truncationMode(.tail) // ✅ Show "..."
-                                        .padding(2)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .padding(.vertical, 2)
                                 }
                             }
                         }
-                        .onDelete(perform: deleteCreateHistoryItem) // ✅ Swipe to delete created QR history
+                        .onDelete(perform: deleteCreateHistoryItem)
                     }
+                }
+
+                if scanHistory.isEmpty && createHistory.isEmpty {
+                    Text("No history yet")
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("History")
-        }
-        .onAppear {
-            loadHistory()
+            .onAppear(perform: loadHistory)
         }
     }
 
-    // MARK: - Get Icon Based on QR Code Type
     private func getIcon(for text: String) -> String {
         if text.lowercased().contains("wifi:") {
-            return "wifi" // ✅ WiFi Icon
+            return "wifi"
         } else if text.lowercased().hasPrefix("http") {
-            return "link" // ✅ URL Icon
+            return "link"
         } else if text.lowercased().contains("mailto:") || text.lowercased().contains("matmsg:") {
-            return "envelope" // ✅ Email Icon
+            return "envelope"
         } else if text.lowercased().contains("tel:") {
-            return "phone" // ✅ Phone Icon
+            return "phone"
         } else if text.lowercased().contains("smsto:") {
-            return "message" // ✅ SMS Icon
+            return "message"
         } else if text.lowercased().contains("geo:") {
-            return "location" // ✅ Location Icon
+            return "location"
         } else if text.lowercased().contains("vcard") || text.lowercased().contains("begin:vcard") {
-            return "person.crop.circle" // ✅ Contact Icon
+            return "person.crop.circle"
         } else {
-            return "qrcode" // ✅ Default QR Code Icon
+            return "qrcode"
+        }
+    }
+
+    private func getBarcodeTypeName(_ type: AVMetadataObject.ObjectType) -> String {
+        switch type {
+        case .qr:
+            return "QR Code"
+        case .ean8:
+            return "EAN-8"
+        case .ean13:
+            return "EAN-13"
+        case .pdf417:
+            return "PDF417"
+        case .aztec:
+            return "Aztec"
+        case .code128:
+            return "Code 128"
+        case .code39:
+            return "Code 39"
+        case .code93:
+            return "Code 93"
+        case .dataMatrix:
+            return "Data Matrix"
+        case .interleaved2of5:
+            return "Interleaved 2 of 5"
+        case .itf14:
+            return "ITF-14"
+        case .upce:
+            return "UPC-E"
+        default:
+            return "Barcode"
         }
     }
 
     // MARK: - Load History from UserDefaults
     private func loadHistory() {
-        scanHistory = UserDefaults.standard.stringArray(forKey: "scanHistory") ?? []
+        // Load scan history with type information
+        if let savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] {
+            scanHistory = savedHistory.compactMap { item in
+                guard let text = item["text"],
+                      let typeString = item["type"] else {
+                    return nil
+                }
+                return ScanHistoryItem(text: text, type: AVMetadataObject.ObjectType(rawValue: typeString))
+            }
+        }
+        
+        // Load create history
         createHistory = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
     }
 
     // MARK: - Delete a Scan History Item
     private func deleteScanHistoryItem(at offsets: IndexSet) {
-        var storedHistory = UserDefaults.standard.stringArray(forKey: "scanHistory") ?? []
-        storedHistory.remove(atOffsets: offsets)
-        UserDefaults.standard.setValue(storedHistory, forKey: "scanHistory")
-        loadHistory() // Refresh list
+        var savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] ?? []
+        offsets.forEach { index in
+            if index < savedHistory.count {
+                savedHistory.remove(at: index)
+            }
+        }
+        UserDefaults.standard.setValue(savedHistory, forKey: "scanHistory")
+        loadHistory()
     }
 
     // MARK: - Delete a Create History Item
@@ -101,6 +171,7 @@ struct HistoryView: View {
         var storedHistory = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
         storedHistory.remove(atOffsets: offsets)
         UserDefaults.standard.setValue(storedHistory, forKey: "createHistory")
-        loadHistory() // Refresh list
+        loadHistory()
     }
 }
+

@@ -9,7 +9,7 @@ import SwiftUI
 import AVFoundation
 
 struct QRCodeScannerView: UIViewControllerRepresentable {
-    var completion: (String) -> Void
+    var completion: (String, AVMetadataObject.ObjectType) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -33,11 +33,10 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
         func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
             guard let metadataObject = metadataObjects.first,
                   let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject,
-                  readableObject.type == .qr,
                   let stringValue = readableObject.stringValue else { return }
 
             DispatchQueue.main.async {
-                self.parent.completion(stringValue)
+                self.parent.completion(stringValue, readableObject.type)
             }
         }
     }
@@ -81,7 +80,20 @@ class ScannerViewController: UIViewController {
             if session.canAddOutput(metadataOutput) {
                 session.addOutput(metadataOutput)
                 metadataOutput.setMetadataObjectsDelegate(self.delegate, queue: DispatchQueue.main)
-                metadataOutput.metadataObjectTypes = [.qr]
+                metadataOutput.metadataObjectTypes = [
+                    .qr,
+                    .ean13,
+                    .ean8,
+                    .pdf417,
+                    .aztec,
+                    .code128,
+                    .code39,
+                    .code93,
+                    .dataMatrix,
+                    .interleaved2of5,
+                    .itf14,
+                    .upce
+                ]
             }
 
             DispatchQueue.main.async {

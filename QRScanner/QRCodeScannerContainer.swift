@@ -10,6 +10,7 @@ import AVFoundation
 
 struct QRCodeScannerContainer: View {
     @State private var scannedCode: String? = nil
+    @State private var scannedType: AVMetadataObject.ObjectType? = nil
     @State private var isShowingResult = false
     @State private var flashlightEnabled = false
     @State private var overlayScale: CGFloat = 1.0
@@ -19,12 +20,13 @@ struct QRCodeScannerContainer: View {
         NavigationStack {
             ZStack {
                 if !isShowingResult {
-                    QRCodeScannerView { code in
+                    QRCodeScannerView { code, type in
                         scannedCode = code
+                        scannedType = type
                         isShowingResult = true
                         playScanSound()
                         turnOffFlashlight()
-                        saveToScanHistory(code)
+                        saveToScanHistory(code, type: type)
                     }
                     .edgesIgnoringSafeArea(.all)
 
@@ -76,10 +78,13 @@ struct QRCodeScannerContainer: View {
                 }
             }
             .navigationDestination(isPresented: $isShowingResult) {
-                ScanResultView(scannedText: scannedCode ?? "") {
-                    isShowingResult = false
-                    scannedCode = nil
-                    turnOffFlashlight()
+                if let code = scannedCode, let type = scannedType {
+                    ScanResultView(scannedText: code, barcodeType: type) {
+                        isShowingResult = false
+                        scannedCode = nil
+                        scannedType = nil
+                        turnOffFlashlight()
+                    }
                 }
             }
         }
@@ -177,10 +182,15 @@ func playScanSound() {
 
 
 // MARK: - Save to Scan History
-func saveToScanHistory(_ scannedText: String) {
-    var history = UserDefaults.standard.stringArray(forKey: "scanHistory") ?? []
-    if !history.contains(scannedText) {
-        history.append(scannedText)
+func saveToScanHistory(_ scannedText: String, type: AVMetadataObject.ObjectType) {
+    let scanItem = [
+        "text": scannedText,
+        "type": type.rawValue
+    ]
+    
+    var history = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] ?? []
+    if !history.contains(where: { $0["text"] == scannedText }) {
+        history.append(scanItem)
         UserDefaults.standard.setValue(history, forKey: "scanHistory")
     }
 }

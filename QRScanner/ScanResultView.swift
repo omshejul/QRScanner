@@ -7,30 +7,42 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import AVFoundation
 
 struct ScanResultView: View {
     let scannedText: String
+    let barcodeType: AVMetadataObject.ObjectType
     let onDismiss: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                // QR Code Image
-                generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .padding(20)
+                // Show QR Code Image only for QR codes
+                if barcodeType == .qr {
+                    generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .padding(20)
+                } else {
+                    // Show appropriate barcode icon for other types
+                    Image(systemName: getBarcodeIcon(for: barcodeType))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 150, height: 100)
+                        .foregroundColor(.primary)
+                        .padding(20)
+                }
 
                 // Data Section
                 SectionView(title: "DATA", content: scannedText)
 
                 // Type Section
-                SectionView(title: "TYPE", content: determineQRType(from: scannedText))
+                SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
 
                 // Action Buttons
-                ActionButtonsView(scannedText: scannedText)
+                ActionButtonsView(scannedText: scannedText, barcodeType: barcodeType)
 
                 Spacer()
             }
@@ -66,15 +78,77 @@ struct ScanResultView: View {
     }
 
     // MARK: - Determine QR Code Type
-    func determineQRType(from text: String) -> String {
+    func determineQRType(from text: String, type: AVMetadataObject.ObjectType) -> String {
+        // First check the actual barcode type
+        let baseType = getBarcodeTypeName(type)
+        
+        // Then check for specific content patterns
         if text.starts(with: "http") {
-            return "QRCode (URL)"
+            return "\(baseType) (URL)"
         } else if text.contains("@") {
-            return "QRCode (Email)"
+            return "\(baseType) (Email)"
+        } else if text.contains("WIFI:") {
+            return "\(baseType) (WiFi)"
+        } else if text.starts(with: "BEGIN:VCARD") {
+            return "\(baseType) (Contact)"
+        } else if text.starts(with: "tel:") {
+            return "\(baseType) (Phone)"
+        } else if text.starts(with: "smsto:") {
+            return "\(baseType) (SMS)"
+        } else if text.starts(with: "geo:") {
+            return "\(baseType) (Location)"
         } else if text.allSatisfy({ $0.isNumber }) {
-            return "QRCode (Number)"
+            return baseType
         } else {
-            return "QRCode (Text)"
+            return "\(baseType) (Text)"
+        }
+    }
+
+    private func getBarcodeTypeName(_ type: AVMetadataObject.ObjectType) -> String {
+        switch type {
+        case .qr:
+            return "QR Code"
+        case .ean8:
+            return "EAN-8"
+        case .ean13:
+            return "EAN-13"
+        case .pdf417:
+            return "PDF417"
+        case .aztec:
+            return "Aztec"
+        case .code128:
+            return "Code 128"
+        case .code39:
+            return "Code 39"
+        case .code93:
+            return "Code 93"
+        case .dataMatrix:
+            return "Data Matrix"
+        case .interleaved2of5:
+            return "Interleaved 2 of 5"
+        case .itf14:
+            return "ITF-14"
+        case .upce:
+            return "UPC-E"
+        default:
+            return "Barcode"
+        }
+    }
+
+    private func getBarcodeIcon(for type: AVMetadataObject.ObjectType) -> String {
+        switch type {
+        case .ean8, .ean13, .upce:
+            return "barcode.viewfinder"
+        case .pdf417:
+            return "doc.viewfinder"
+        case .aztec:
+            return "square.grid.3x3.square"
+        case .dataMatrix:
+            return "square.grid.2x2"
+        case .code128, .code39, .code93, .interleaved2of5, .itf14:
+            return "barcode"
+        default:
+            return "viewfinder"
         }
     }
 }
@@ -106,6 +180,7 @@ struct SectionView: View {
 // MARK: - Action Buttons with Additional Actions
 struct ActionButtonsView: View {
     let scannedText: String
+    let barcodeType: AVMetadataObject.ObjectType
     @State private var isCopied = false
     @State private var isSharingData = false
     @State private var isSharingQR = false
@@ -200,38 +275,40 @@ struct ActionButtonsView: View {
                 }
                 Divider()
 
-                // ✅ Only allow tap when NOT generating QR
-                ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
-                    if !isGeneratingQR {
-                        isGeneratingQR = true
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let window = windowScene.windows.first {
-                            // ✅ Correctly determine dark mode
-                            let isDark: Bool
-                            if window.overrideUserInterfaceStyle == .unspecified {
-                                isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
-                            } else {
-                                isDark = window.overrideUserInterfaceStyle == .dark
-                            }
+                // Only show QR Code sharing for QR codes
+                if barcodeType == .qr {
+                    // ✅ Only allow tap when NOT generating QR
+                    ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
+                        if !isGeneratingQR {
+                            isGeneratingQR = true
+                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                               let window = windowScene.windows.first {
+                                // ✅ Correctly determine dark mode
+                                let isDark: Bool
+                                if window.overrideUserInterfaceStyle == .unspecified {
+                                    isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
+                                } else {
+                                    isDark = window.overrideUserInterfaceStyle == .dark
+                                }
 
-                            // ✅ Generate QR Code with correct theme
-                            if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
-                                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
-                                try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
-                                qrShareURL = tempURL
-                                isSharingQR = true
+                                // ✅ Generate QR Code with correct theme
+                                if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
+                                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                                    try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
+                                    qrShareURL = tempURL
+                                    isSharingQR = true
+                                }
                             }
-                        }
-                        // ✅ Ensure `isGeneratingQR` resets even if `windowScene` is nil
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isGeneratingQR = false
+                            // ✅ Ensure `isGeneratingQR` resets even if `windowScene` is nil
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isGeneratingQR = false
+                            }
                         }
                     }
-                }
-
-                .sheet(isPresented: $isSharingQR) {
-                    if let qrShareURL = qrShareURL {
-                        ShareSheet(activityItems: [qrShareURL]) // ✅ Share Image
+                    .sheet(isPresented: $isSharingQR) {
+                        if let qrShareURL = qrShareURL {
+                            ShareSheet(activityItems: [qrShareURL]) // ✅ Share Image
+                        }
                     }
                 }
             }
