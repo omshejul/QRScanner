@@ -35,7 +35,8 @@ struct HistoryView: View {
                         ForEach(scanHistory) { item in
                             NavigationLink(destination: ScanResultView(scannedText: item.text, barcodeType: item.type) {}) {
                                 HStack {
-                                    Image(systemName: getIcon(for: item.text))
+                                    // Show content-specific icon if available, otherwise show type icon
+                                    Image(systemName: item.text.allSatisfy({ $0.isNumber }) ? getTypeIcon(for: item.type) : getIcon(for: item.text))
                                         .foregroundColor(.blue)
 
                                     VStack(alignment: .leading) {
@@ -63,10 +64,15 @@ struct HistoryView: View {
                                     Image(systemName: getIcon(for: createdItem))
                                         .foregroundColor(.blue)
                                     
-                                    Text(createdItem)
-                                        .lineLimit(1)
-                                        .truncationMode(.tail)
-                                        .padding(.vertical, 2)
+                                    VStack(alignment: .leading) {
+                                        Text(createdItem)
+                                            .lineLimit(1)
+                                            .truncationMode(.tail)
+                                        Text("QR Code")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding(.vertical, 2)
                                 }
                             }
                         }
@@ -87,10 +93,11 @@ struct HistoryView: View {
     }
 
     private func getIcon(for text: String) -> String {
+        // First check for special content patterns
         if text.lowercased().contains("wifi:") {
             return "wifi"
         } else if text.lowercased().hasPrefix("http") {
-            return "link"
+            return "safari"
         } else if text.lowercased().contains("mailto:") || text.lowercased().contains("matmsg:") {
             return "envelope"
         } else if text.lowercased().contains("tel:") {
@@ -101,8 +108,31 @@ struct HistoryView: View {
             return "location"
         } else if text.lowercased().contains("vcard") || text.lowercased().contains("begin:vcard") {
             return "person.crop.circle"
+        } else if text.allSatisfy({ $0.isNumber }) {
+            // For numeric codes (likely barcodes), use barcode icon
+            return "barcode.viewfinder"
         } else {
+            // Default icon based on type
             return "qrcode"
+        }
+    }
+
+    private func getTypeIcon(for type: AVMetadataObject.ObjectType) -> String {
+        switch type {
+        case .ean8, .ean13, .upce:
+            return "barcode.viewfinder"
+        case .pdf417:
+            return "doc.viewfinder"
+        case .aztec:
+            return "square.grid.3x3.square"
+        case .dataMatrix:
+            return "square.grid.2x2"
+        case .code128, .code39, .code93, .interleaved2of5, .itf14:
+            return "barcode"
+        case .qr:
+            return "qrcode"
+        default:
+            return "viewfinder"
         }
     }
 

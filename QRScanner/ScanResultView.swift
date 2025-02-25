@@ -188,6 +188,34 @@ struct ActionButtonsView: View {
     @State private var isGeneratingQR = false
     @State private var qrShareURL: URL?
 
+    // MARK: - Get Region-Specific Amazon URL
+    private func getAmazonDomain() -> String {
+        let countryCode = Locale.current.region?.identifier ?? "US"
+        
+        let amazonDomains: [String: String] = [
+            "US": "amazon.com",
+            "IN": "amazon.in",
+            "UK": "amazon.co.uk",
+            "CA": "amazon.ca",
+            "DE": "amazon.de",
+            "FR": "amazon.fr",
+            "IT": "amazon.it",
+            "ES": "amazon.es",
+            "JP": "amazon.co.jp",
+            "AU": "amazon.com.au",
+            "AE": "amazon.ae",
+            "BR": "amazon.com.br"
+        ]
+        
+        return amazonDomains[countryCode] ?? "amazon.com"
+    }
+
+    private func getAmazonSearchURL(for query: String) -> URL? {
+        let domain = getAmazonDomain()
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        return URL(string: "https://www.\(domain)/s?k=\(encodedQuery)")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("ACTION")
@@ -252,6 +280,32 @@ struct ActionButtonsView: View {
                 if scannedText.contains("BEGIN:VCARD") {
                     ActionButton(icon: "person.crop.circle", text: "Save Contact") {
                         saveContact(scannedText)
+                    }
+                    Divider()
+                }
+
+                // Product Search Options for Barcodes
+                if [.ean8, .ean13, .upce, .code128].contains(barcodeType) && scannedText.allSatisfy({ $0.isNumber }) {
+                    ActionButton(icon: "cart", text: "Search on Amazon.\(getAmazonDomain().split(separator: ".").last ?? "com")") {
+                        if let url = getAmazonSearchURL(for: scannedText) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+
+                    ActionButton(icon: "magnifyingglass", text: "Search on Google") {
+                        if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                           let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+
+                    ActionButton(icon: "barcode.viewfinder", text: "Search Barcode") {
+                        if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                           let url = URL(string: "https://www.barcodelookup.com/\(encodedQuery)") {
+                            UIApplication.shared.open(url)
+                        }
                     }
                     Divider()
                 }
