@@ -301,9 +301,23 @@ struct ActionButtonsView: View {
                     }
                     Divider()
 
-                    ActionButton(icon: "barcode.viewfinder", text: "Search Barcode") {
+                    ActionButton(icon: "magnifyingglass.circle.fill", text: "Search on BarcodeLookup") {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://www.barcodelookup.com/\(encodedQuery)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+                    ActionButton(icon: "cart.circle.fill", text: "Search on Go-UPC") {
+                        if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                           let url = URL(string: "https://go-upc.com/search?q=/\(encodedQuery)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+                    ActionButton(icon: "checkmark.seal.fill", text: "Search on GS1 (Official)") {
+                        if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                           let url = URL(string: "https://www.gs1.org/services/verified-by-gs1/results?gtin=\(encodedQuery)") {
                             UIApplication.shared.open(url)
                         }
                     }

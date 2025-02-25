@@ -10,6 +10,7 @@ import AVFoundation
 
 struct QRCodeScannerView: UIViewControllerRepresentable {
     var completion: (String, AVMetadataObject.ObjectType) -> Void
+    var selectedDevice: AVCaptureDevice?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -18,10 +19,15 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> ScannerViewController {
         let scannerViewController = ScannerViewController()
         scannerViewController.delegate = context.coordinator
+        scannerViewController.selectedDevice = selectedDevice
         return scannerViewController
     }
 
-    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {
+        if uiViewController.selectedDevice?.uniqueID != selectedDevice?.uniqueID {
+            uiViewController.switchCamera(to: selectedDevice)
+        }
+    }
 
     class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         var parent: QRCodeScannerView
@@ -47,6 +53,7 @@ class ScannerViewController: UIViewController {
     var captureSession: AVCaptureSession?
     var previewLayer: AVCaptureVideoPreviewLayer?
     weak var delegate: AVCaptureMetadataOutputObjectsDelegate?
+    var selectedDevice: AVCaptureDevice?
     
     private var videoCaptureDevice: AVCaptureDevice?
 
@@ -62,12 +69,15 @@ class ScannerViewController: UIViewController {
     func setupScanner() {
         DispatchQueue.global(qos: .userInitiated).async {
             let session = AVCaptureSession()
-            guard let videoDevice = AVCaptureDevice.default(for: .video) else { return }
-            self.videoCaptureDevice = videoDevice
+            
+            // Use the selected device or fall back to default
+            let videoDevice = self.selectedDevice ?? AVCaptureDevice.default(for: .video)
+            guard let device = videoDevice else { return }
+            self.videoCaptureDevice = device
 
             let videoInput: AVCaptureDeviceInput
             do {
-                videoInput = try AVCaptureDeviceInput(device: videoDevice)
+                videoInput = try AVCaptureDeviceInput(device: device)
             } catch {
                 return
             }
@@ -139,5 +149,27 @@ class ScannerViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         stopScanning()
+    }
+
+    func switchCamera(to device: AVCaptureDevice?) {
+        guard let newDevice = device,
+              videoCaptureDevice?.uniqueID != newDevice.uniqueID,
+              let session = captureSession else { return }
+        
+        session.beginConfiguration()
+        
+        // Remove existing input
+        session.inputs.forEach { session.removeInput($0) }
+        
+        // Add new input for the selected device
+        if let newInput = try? AVCaptureDeviceInput(device: newDevice) {
+            if session.canAddInput(newInput) {
+                session.addInput(newInput)
+                self.videoCaptureDevice = newDevice
+                self.selectedDevice = newDevice
+            }
+        }
+        
+        session.commitConfiguration()
     }
 }

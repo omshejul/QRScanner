@@ -14,20 +14,49 @@ struct QRCodeScannerContainer: View {
     @State private var isShowingResult = false
     @State private var flashlightEnabled = false
     @State private var overlayScale: CGFloat = 1.0
+    @State private var showCameraSelector = false
+    @State private var backCameras: [AVCaptureDevice] = []
+    @State private var frontCameras: [AVCaptureDevice] = []
+    @State private var selectedLens: AVCaptureDevice? = nil
 
     let scanBoxSize: CGFloat = 250 // Square size for scanning
+    
+    // Add initialization of available cameras
+    init() {
+        // Get back cameras
+        let backSession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
+            mediaType: .video,
+            position: .back
+        )
+        self._backCameras = State(initialValue: backSession.devices)
+        
+        // Get front cameras
+        let frontSession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera],
+            mediaType: .video,
+            position: .front
+        )
+        self._frontCameras = State(initialValue: frontSession.devices)
+        
+        // Set default camera
+        if let defaultCamera = backSession.devices.first {
+            self._selectedLens = State(initialValue: defaultCamera)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 if !isShowingResult {
-                    QRCodeScannerView { code, type in
+                    QRCodeScannerView(completion:  { code, type in
                         scannedCode = code
                         scannedType = type
                         isShowingResult = true
                         playScanSound()
                         turnOffFlashlight()
                         saveToScanHistory(code, type: type)
-                    }
+                    }, selectedDevice: selectedLens)
                     .edgesIgnoringSafeArea(.all)
 
                     // ✅ Scanner Overlay with L-Shaped Corners
@@ -60,20 +89,33 @@ struct QRCodeScannerContainer: View {
                     }
                     .frame(width: scanBoxSize, height: scanBoxSize)
 
-                    // ✅ Flashlight Toggle Button (Better Positioning)
+                    // Add Camera Controls
                     GeometryReader { proxy in
-                        VStack {
-                            Spacer()
-                            Button(action: toggleFlashlight) {
-                                Image(systemName: flashlightEnabled ? "flashlight.on.fill" : "flashlight.off.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(flashlightEnabled ? .blue : .white)
-                                    .padding(24)
+                        // Bottom Controls
+                        HStack(spacing: 20) {
+                            // Camera Selection Button
+                            Button(action: { showCameraSelector = true }) {
+                                Image(systemName: "camera.rotate")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.white)
+                                    .frame(width: 64, height: 64)
                                     .background(.ultraThinMaterial)
                                     .clipShape(Circle())
                             }
-                            .position(x: proxy.size.width / 2, y: proxy.size.height - 80) // Center at bottom
+                            
+                            // Flashlight Button
+                            if selectedLens?.position == .back {
+                                Button(action: toggleFlashlight) {
+                                    Image(systemName: flashlightEnabled ? "flashlight.on.fill" : "flashlight.off.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(flashlightEnabled ? .blue : .white)
+                                        .frame(width: 64, height: 64)
+                                        .background(.ultraThinMaterial)
+                                        .clipShape(Circle())
+                                }
+                            }
                         }
+                        .position(x: proxy.size.width / 2, y: proxy.size.height - 50)
                     }
                 }
             }
@@ -86,6 +128,14 @@ struct QRCodeScannerContainer: View {
                         turnOffFlashlight()
                     }
                 }
+            }
+            .sheet(isPresented: $showCameraSelector) {
+                CameraSelectorSheet(
+                    selectedLens: $selectedLens,
+                    backCameras: backCameras,
+                    frontCameras: frontCameras,
+                    isPresented: $showCameraSelector
+                )
             }
         }
         .navigationBarHidden(true)
@@ -115,26 +165,70 @@ struct QRCodeScannerContainer: View {
     private func toggleFlashlight() {
         flashlightEnabled.toggle()
 
-        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        guard let device = selectedLens,
+              device.hasTorch,
+              device.position == .back else {
+            flashlightEnabled = false
+            return
+        }
+
         do {
             try device.lockForConfiguration()
             device.torchMode = flashlightEnabled ? .on : .off
             device.unlockForConfiguration()
         } catch {
             print("Flashlight could not be used")
+            flashlightEnabled = false
         }
     }
 
     // MARK: - Turn Off Flashlight When Leaving Scanner
     private func turnOffFlashlight() {
         flashlightEnabled = false
-        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        guard let device = selectedLens,
+              device.hasTorch,
+              device.position == .back else { return }
+
         do {
             try device.lockForConfiguration()
             device.torchMode = .off
             device.unlockForConfiguration()
         } catch {
             print("Flashlight could not be turned off")
+        }
+    }
+
+    // MARK: - Helper Functions
+    private func getCameraDescription() -> String {
+        guard let device = selectedLens else { return "Select Camera" }
+        let position = device.position == .front ? "Front" : "Back"
+        return "\(position) - \(getLensName(for: device))"
+    }
+
+    private func getLensName(for camera: AVCaptureDevice) -> String {
+        let magnification: String
+        if camera.deviceType == .builtInUltraWideCamera {
+            magnification = "0.5×"
+        } else if camera.deviceType == .builtInTelephotoCamera {
+            // Get approximate zoom level based on field of view comparison
+            let fov = camera.activeFormat.videoFieldOfView
+            if fov <= 13 {
+                magnification = "5×"
+            } else if fov <= 30 {
+                magnification = "3×"
+            } else {
+                magnification = "2×"
+            }
+        } else {
+            magnification = "1×"
+        }
+        
+        if camera.deviceType == .builtInUltraWideCamera {
+            return "Ultra Wide \(magnification)"
+        } else if camera.deviceType == .builtInTelephotoCamera {
+            return "Telephoto \(magnification)"
+        } else {
+            return "Main \(magnification)"
         }
     }
 }
@@ -192,5 +286,113 @@ func saveToScanHistory(_ scannedText: String, type: AVMetadataObject.ObjectType)
     if !history.contains(where: { $0["text"] == scannedText }) {
         history.append(scanItem)
         UserDefaults.standard.setValue(history, forKey: "scanHistory")
+    }
+}
+
+// MARK: - Camera Selector Sheet
+struct CameraSelectorSheet: View {
+    @Binding var selectedLens: AVCaptureDevice?
+    let backCameras: [AVCaptureDevice]
+    let frontCameras: [AVCaptureDevice]
+    @Binding var isPresented: Bool
+    
+    var body: some View {
+        NavigationView {
+            List {
+                if !backCameras.isEmpty {
+                    Section("Back Cameras") {
+                        ForEach(backCameras, id: \.uniqueID) { camera in
+                            CameraRow(camera: camera, isSelected: selectedLens?.uniqueID == camera.uniqueID)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedLens = camera
+                                    isPresented = false
+                                }
+                        }
+                    }
+                }
+                
+                if !frontCameras.isEmpty {
+                    Section("Front Cameras") {
+                        ForEach(frontCameras, id: \.uniqueID) { camera in
+                            CameraRow(camera: camera, isSelected: selectedLens?.uniqueID == camera.uniqueID)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedLens = camera
+                                    isPresented = false
+                                }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Select Camera")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+struct CameraRow: View {
+    let camera: AVCaptureDevice
+    let isSelected: Bool
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(getLensName(for: camera))
+                    .font(.headline)
+                Text(getDeviceDetails(for: camera))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.blue)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func getLensName(for camera: AVCaptureDevice) -> String {
+        let magnification: String
+        if camera.deviceType == .builtInUltraWideCamera {
+            magnification = "0.5×"
+        } else if camera.deviceType == .builtInTelephotoCamera {
+            // Get approximate zoom level based on field of view comparison
+            let fov = camera.activeFormat.videoFieldOfView
+            if fov <= 18 {
+                magnification = "5×"
+            } else if fov <= 30 {
+                magnification = "3×"
+            } else {
+                magnification = "2×"
+            }
+        } else {
+            magnification = "1×"
+        }
+        
+        if camera.deviceType == .builtInUltraWideCamera {
+            return "Ultra Wide \(magnification)"
+        } else if camera.deviceType == .builtInTelephotoCamera {
+            return "Telephoto \(magnification)"
+        } else {
+            return "Main \(magnification)"
+        }
+    }
+    
+    private func getDeviceDetails(for camera: AVCaptureDevice) -> String {
+        let position = camera.position == .front ? "Front" : "Back"
+        let focal = String(format: "%.1f", camera.activeFormat.videoFieldOfView)
+        return "\(position) Camera - \(focal)°"
     }
 }
