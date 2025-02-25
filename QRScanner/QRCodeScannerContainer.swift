@@ -277,13 +277,14 @@ func playScanSound() {
 
 // MARK: - Save to Scan History
 func saveToScanHistory(_ scannedText: String, type: AVMetadataObject.ObjectType) {
-    let scanItem = [
+    let scanItem: [String: Any] = [
         "text": scannedText,
-        "type": type.rawValue
+        "type": type.rawValue,
+        "timestamp": Date()
     ]
     
-    var history = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] ?? []
-    if !history.contains(where: { $0["text"] == scannedText }) {
+    var history = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]] ?? []
+    if !history.contains(where: { ($0["text"] as? String) == scannedText }) {
         history.append(scanItem)
         UserDefaults.standard.setValue(history, forKey: "scanHistory")
     }

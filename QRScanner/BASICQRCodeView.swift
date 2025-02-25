@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import AVFoundation
 
 enum QRType: String, CaseIterable {
     case wifi = "WiFi"
@@ -316,6 +317,21 @@ struct BASICQRCodeView: View {
         case .sms: return "Enter Phone Number"
         case .contact: return "Enter Name"
         default: return ""
+        }
+    }
+
+    // MARK: - Save to Create History
+    func saveToCreateHistory(_ createdText: String) {
+        let createItem: [String: Any] = [
+            "text": createdText,
+            "type": AVMetadataObject.ObjectType.qr.rawValue,
+            "timestamp": Date()
+        ]
+        
+        var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
+        if !history.contains(where: { ($0["text"] as? String) == createdText }) {
+            history.append(createItem)
+            UserDefaults.standard.setValue(history, forKey: "createHistory")
         }
     }
 }

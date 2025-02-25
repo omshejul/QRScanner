@@ -6,16 +6,132 @@
 //
 
 import SwiftUI
+import AVFoundation
+import RSBarcodes_Swift
+
+enum BarcodeType: String, CaseIterable {
+    case aztec = "Aztec"
+    case code39 = "Code 39"
+    case code39Mod43 = "Code 39 Mod 43"
+    case extendedCode39 = "Extended Code 39"
+    case code93 = "Code 93"
+    case code128 = "Code 128"
+    case upce = "UPC-E"
+    case ean8 = "EAN-8"
+    case ean13 = "EAN-13"
+    case isbn13 = "ISBN-13"
+    case issn13 = "ISSN-13"
+    case itf14 = "ITF-14"
+    case interleaved2of5 = "Interleaved 2 of 5"
+    case pdf417 = "PDF417"
+    case dataMatrix = "Data Matrix"
+    // case codabar = "Codabar"
+    
+    var metadata: BarcodeMetadata {
+        switch self {
+        case .code39:
+            return BarcodeMetadata(
+                example: "ABC-123",
+                usage: "Used in logistics, manufacturing, and military applications. Supports uppercase letters, numbers, and some special characters."
+            )
+        case .code39Mod43:
+            return BarcodeMetadata(
+                example: "CODE39",
+                usage: "Similar to Code 39, but with added check digit for better accuracy. Common in healthcare and defense industries."
+            )
+        case .extendedCode39:
+            return BarcodeMetadata(
+                example: "Code-39+",
+                usage: "Extended version supporting all 128 ASCII characters. Used in document management and inventory systems."
+            )
+        case .code93:
+            return BarcodeMetadata(
+                example: "CODE93",
+                usage: "More compact than Code 39, used in logistics and retail. Supports full ASCII character set."
+            )
+        case .code128:
+            return BarcodeMetadata(
+                example: "ABC12345",
+                usage: "Versatile barcode for logistics and retail. Supports all ASCII characters and is very compact."
+            )
+        case .upce:
+            return BarcodeMetadata(
+                example: "01234565",
+                usage: "Compressed UPC code for small retail items. Used on small product packages where space is limited."
+            )
+        case .ean8:
+            return BarcodeMetadata(
+                example: "12345670",
+                usage: "Short-form retail barcode used worldwide on small products where EAN-13 won't fit."
+            )
+        case .ean13:
+            return BarcodeMetadata(
+                example: "1234567890128",
+                usage: "Standard retail barcode used worldwide for product identification."
+            )
+        case .isbn13:
+            return BarcodeMetadata(
+                example: "9780123456789",
+                usage: "Used for book identification worldwide. Starts with 978 or 979."
+            )
+        case .issn13:
+            return BarcodeMetadata(
+                example: "9771234567898",
+                usage: "Used for periodical publications. Starts with 977."
+            )
+        case .itf14:
+            return BarcodeMetadata(
+                example: "12345678901231",
+                usage: "Used on packaging for shipping cartons. Based on Interleaved 2 of 5."
+            )
+        case .interleaved2of5:
+            return BarcodeMetadata(
+                example: "1234567890",
+                usage: "Used in industrial and warehouse applications. Must contain an even number of digits."
+            )
+        case .pdf417:
+            return BarcodeMetadata(
+                example: "PDF417TEST",
+                usage: "2D barcode used on ID cards, shipping labels, and tickets. Can store up to 1.1 kilobytes."
+            )
+        case .aztec:
+            return BarcodeMetadata(
+                example: "AZTEC2D",
+                usage: "2D barcode used in transport tickets and airline boarding passes. Reads well even if poorly printed."
+            )
+        case .dataMatrix:
+            return BarcodeMetadata(
+                example: "DM2D123",
+                usage: "2D barcode used in industrial marking and packaging. Ideal for small items and can encode a large amount of data."
+            )
+        // case .codabar:
+        //     return BarcodeMetadata(
+        //         example: "A12345B",
+        //         usage: "Used in libraries, blood banks, and shipping. Requires start/stop characters (A-D)."
+        //     )
+        }
+    }
+}
+
+struct BarcodeMetadata {
+    let example: String
+    let usage: String
+}
 
 struct QRCodeGeneratorView: View {
     var body: some View {
         NavigationStack { // ✅ REPLACED NavigationView with NavigationStack
             List {
                 // MARK: - Basic Section
-                Section(header: Text("SIMPLE").font(.caption).foregroundColor(.gray)) {
+                Section(header: Text("BASIC").font(.caption).foregroundColor(.gray)) {
                     ForEach(QRType.allCases.filter { $0 != .contact }, id: \.rawValue) { type in
                         NavigationLink(destination: BASICQRCodeView(type: type)) {
                             QRCodeOptionRow(icon: getSystemIcon(for: type), title: type.rawValue)
+                        }
+                    }
+                    ForEach(AdvanceQRType.allCases, id: \.rawValue) { type in
+                        NavigationLink(destination: AdvanceQRCodeView(type: type)) {
+                            QRCodeOptionRow(icon: getAdvancedIcon(for: type), title: type.rawValue)
                         }
                     }
                     
@@ -23,6 +139,33 @@ struct QRCodeGeneratorView: View {
                         QRCodeOptionRow(icon: "person.crop.circle", title: "Contact")
                     }
                 }
+
+                // MARK: - Barcode Section
+                Section(header: Text("ADVANCED").font(.caption).foregroundColor(.gray)) {
+                    ForEach(BarcodeType.allCases.filter { $0 != .dataMatrix }, id: \.rawValue) { type in
+                        NavigationLink(destination: BarcodeGeneratorView(type: type)) {
+                            QRCodeOptionRow(icon: getBarcodeIcon(for: type), title: type.rawValue)
+                        }
+                    }
+                    
+                    // Data Matrix (Coming Soon)
+                    HStack {
+                        Image(systemName: "square.grid.2x2")
+                            .foregroundColor(.gray)
+                            .frame(width: 25, height: 25)
+                            .aspectRatio(contentMode: .fit)
+                            .alignmentGuide(.firstTextBaseline) { d in d[.leading] }
+
+                        Text("Data Matrix")
+                            .foregroundColor(.gray)
+                        Text("(Coming Soon)")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.leading, 4)
+                    }
+                    .padding(.vertical, 4)
+                }
+
 
                 // MARK: - Social Section
                 Section(header: Text("SOCIAL").font(.caption).foregroundColor(.gray)) {
@@ -92,6 +235,12 @@ func getSystemIcon(for type: QRType) -> String {
     }
 }
 
+// MARK: - Helper Function to Get Advanced Icons
+func getAdvancedIcon(for type: AdvanceQRType) -> String {
+    switch type {
+    case .upi: return "indianrupeesign.circle"
+    }
+}
 
 // MARK: - QR Code Option Row
 struct QRCodeOptionRow: View {
@@ -100,12 +249,18 @@ struct QRCodeOptionRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: icon)
-                .foregroundColor(.blue)
-                .frame(width: 25, height: 25) // Ensures consistent height
-                .aspectRatio(contentMode: .fit) // Maintains aspect ratio
-                .alignmentGuide(.firstTextBaseline) { d in d[.leading] } // Aligns properly
-
+            if title == "Aztec" {
+                Image("aztec")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 25, height: 25)
+                    .foregroundColor(.blue)
+            } else {
+                Image(systemName: icon)
+                    .foregroundColor(.blue)
+                    .frame(width: 25, height: 25)
+                    .aspectRatio(contentMode: .fit)
+            }
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading) // Pushes text left
         }
@@ -245,9 +400,67 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 // MARK: - Save to Create History
 func saveToCreateHistory(_ createdText: String) {
-    var history = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
-    if !history.contains(createdText) {
-        history.append(createdText)
+    let displayType: String
+    if createdText.starts(with: "upi://pay") {
+        displayType = "UPI Payment"
+    } else if createdText.starts(with: "http") {
+        displayType = "Web URL"
+    } else if createdText.starts(with: "WIFI:") {
+        displayType = "WiFi"
+    } else if createdText.starts(with: "MATMSG:") {
+        displayType = "Email"
+    } else if createdText.starts(with: "SMSTO:") {
+        displayType = "SMS"
+    } else if createdText.starts(with: "TEL:") {
+        displayType = "Phone"
+    } else if createdText.starts(with: "BEGIN:VCARD") {
+        displayType = "Contact"
+    } else if createdText.starts(with: "geo:") {
+        displayType = "Location"
+    } else {
+        displayType = "QR Code"
+    }
+
+    let createItem: [String: Any] = [
+        "text": createdText,
+        "type": AVMetadataObject.ObjectType.qr.rawValue,
+        "displayType": displayType,
+        "timestamp": Date()
+    ]
+    
+    var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
+    if !history.contains(where: { ($0["text"] as? String) == createdText }) {
+        history.append(createItem)
         UserDefaults.standard.setValue(history, forKey: "createHistory")
+    }
+}
+
+// MARK: - Helper Function to Get Barcode Icons
+private func getBarcodeIcon(for type: BarcodeType) -> String {
+    switch type {
+    case .code39, .code39Mod43, .extendedCode39:
+        return "barcode"
+    case .code93:
+        return "doc.viewfinder"
+    case .code128:
+        return "barcode"
+    case .upce, .ean8, .ean13:
+        return "cart.fill.badge.plus"
+    case .isbn13:
+        return "book.fill"
+    case .issn13:
+        return "newspaper.fill"
+    case .itf14:
+        return "shippingbox.fill"
+    case .interleaved2of5:
+        return "number.square.fill"
+    case .pdf417:
+        return "doc.text.fill"
+    case .aztec:
+        return ""  // Using custom asset in view
+//    case .codabar:
+//        return "creditcard.fill"
+    case .dataMatrix:
+        return "square.grid.2x2"
     }
 }

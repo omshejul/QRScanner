@@ -7,9 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4B1418B22D63635E0015B643 /* SwiftSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418B12D63635E0015B643 /* SwiftSVG */; };
-		4B1418F12D63B77C0015B643 /* SVGKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418F02D63B77C0015B643 /* SVGKit */; };
-		4B1418F32D63B77C0015B643 /* SVGKitSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4B1418F22D63B77C0015B643 /* SVGKitSwift */; };
+		4B08D8E32D6DB12F00702DEC /* RSBarcodes_Swift in Frameworks */ = {isa = PBXBuildFile; productRef = 4B08D8E22D6DB12F00702DEC /* RSBarcodes_Swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,9 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4B1418F32D63B77C0015B643 /* SVGKitSwift in Frameworks */,
-				4B1418F12D63B77C0015B643 /* SVGKit in Frameworks */,
-				4B1418B22D63635E0015B643 /* SwiftSVG in Frameworks */,
+				4B08D8E32D6DB12F00702DEC /* RSBarcodes_Swift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,9 +70,7 @@
 			);
 			name = QRScanner;
 			packageProductDependencies = (
-				4B1418B12D63635E0015B643 /* SwiftSVG */,
-				4B1418F02D63B77C0015B643 /* SVGKit */,
-				4B1418F22D63B77C0015B643 /* SVGKitSwift */,
+				4B08D8E22D6DB12F00702DEC /* RSBarcodes_Swift */,
 			);
 			productName = QRScanner;
 			productReference = 4B1418822D634C2D0015B643 /* QRScanner.app */;
@@ -107,8 +101,7 @@
 			mainGroup = 4B1418792D634C2D0015B643;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4B1418B02D63635E0015B643 /* XCRemoteSwiftPackageReference "SwiftSVG" */,
-				4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */,
+				4B08D8E12D6DB12F00702DEC /* XCRemoteSwiftPackageReference "RSBarcodes_Swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4B1418832D634C2D0015B643 /* Products */;
@@ -354,39 +347,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		4B1418B02D63635E0015B643 /* XCRemoteSwiftPackageReference "SwiftSVG" */ = {
+		4B08D8E12D6DB12F00702DEC /* XCRemoteSwiftPackageReference "RSBarcodes_Swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/mchoe/SwiftSVG";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-		4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SVGKit/SVGKit";
+			repositoryURL = "https://github.com/yeahdongcn/RSBarcodes_Swift";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 3.0.0;
+				minimumVersion = 5.2.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		4B1418B12D63635E0015B643 /* SwiftSVG */ = {
+		4B08D8E22D6DB12F00702DEC /* RSBarcodes_Swift */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4B1418B02D63635E0015B643 /* XCRemoteSwiftPackageReference "SwiftSVG" */;
-			productName = SwiftSVG;
-		};
-		4B1418F02D63B77C0015B643 /* SVGKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */;
-			productName = SVGKit;
-		};
-		4B1418F22D63B77C0015B643 /* SVGKitSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4B1418EF2D63B77C0015B643 /* XCRemoteSwiftPackageReference "SVGKit" */;
-			productName = SVGKitSwift;
+			package = 4B08D8E12D6DB12F00702DEC /* XCRemoteSwiftPackageReference "RSBarcodes_Swift" */;
+			productName = RSBarcodes_Swift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

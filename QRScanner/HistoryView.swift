@@ -5,18 +5,35 @@
 //  Created by Om Shejul on 17/02/25.
 //
 
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 struct ScanHistoryItem: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID = UUID()
     let text: String
     let type: AVMetadataObject.ObjectType
-    
+    let timestamp: Date
+
     static func == (lhs: ScanHistoryItem, rhs: ScanHistoryItem) -> Bool {
         lhs.id == rhs.id
     }
-    
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+struct CreateHistoryItem: Identifiable, Hashable {
+    let id: UUID = UUID()
+    let text: String
+    let type: AVMetadataObject.ObjectType
+    let timestamp: Date
+    let displayType: String
+
+    static func == (lhs: CreateHistoryItem, rhs: CreateHistoryItem) -> Bool {
+        lhs.id == rhs.id
+    }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -24,7 +41,7 @@ struct ScanHistoryItem: Identifiable, Hashable {
 
 struct HistoryView: View {
     @State private var scanHistory: [ScanHistoryItem] = []
-    @State private var createHistory: [String] = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
+    @State private var createHistory: [CreateHistoryItem] = []
 
     var body: some View {
         NavigationView {
@@ -32,20 +49,33 @@ struct HistoryView: View {
                 // MARK: - Scan History Section
                 if !scanHistory.isEmpty {
                     Section(header: Text("Scan History").font(.caption).foregroundColor(.gray)) {
-                        ForEach(scanHistory) { item in
-                            NavigationLink(destination: ScanResultView(scannedText: item.text, barcodeType: item.type) {}) {
+                        ForEach(scanHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
+                            NavigationLink(
+                                destination: ScanResultView(
+                                    scannedText: item.text, barcodeType: item.type
+                                ) {}
+                            ) {
                                 HStack {
-                                    // Show content-specific icon if available, otherwise show type icon
-                                    Image(systemName: item.text.allSatisfy({ $0.isNumber }) ? getTypeIcon(for: item.type) : getIcon(for: item.text))
-                                        .foregroundColor(.blue)
+                                    if item.type == .aztec {
+                                        Image("aztec")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.blue)
+                                    } else {
+                                        Image(systemName: getTypeIcon(for: item.type))
+                                            .foregroundColor(.blue)
+                                    }
 
                                     VStack(alignment: .leading) {
                                         Text(item.text)
                                             .lineLimit(1)
                                             .truncationMode(.tail)
-                                        Text(getBarcodeTypeName(item.type))
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
+                                        HStack {
+                                            Text("\(getBarcodeTypeName(item.type)) • \(getRelativeTime(from: item.timestamp))")
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
                                     }
                                     .padding(.vertical, 2)
                                 }
@@ -58,19 +88,35 @@ struct HistoryView: View {
                 // MARK: - Create History Section
                 if !createHistory.isEmpty {
                     Section(header: Text("Create History").font(.caption).foregroundColor(.gray)) {
-                        ForEach(createHistory, id: \.self) { createdItem in
-                            NavigationLink(destination: ScanResultView(scannedText: createdItem, barcodeType: .qr) {}) {
+                        ForEach(createHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
+                            NavigationLink(
+                                destination: ScanResultView(
+                                    scannedText: item.text, barcodeType: item.type
+                                ) {}
+                            ) {
                                 HStack {
-                                    Image(systemName: getIcon(for: createdItem))
-                                        .foregroundColor(.blue)
-                                    
+                                    if item.type == .aztec {
+                                        Image("aztec")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.blue)
+                                    } else {
+                                        Image(systemName: getTypeIcon(for: item.type))
+                                            .foregroundColor(.blue)
+                                    }
+
                                     VStack(alignment: .leading) {
-                                        Text(createdItem)
+                                        Text(item.text)
                                             .lineLimit(1)
                                             .truncationMode(.tail)
-                                        Text("QR Code")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
+                                        HStack {
+                                            Text(item.displayType)
+                                            Text("•")
+                                            Text(getRelativeTime(from: item.timestamp))
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
                                     }
                                     .padding(.vertical, 2)
                                 }
@@ -94,23 +140,53 @@ struct HistoryView: View {
 
     private func getIcon(for text: String) -> String {
         // First check for special content patterns
-        if text.lowercased().contains("wifi:") {
+        if text.starts(with: "upi://pay") {
+            return "indianrupeesign.circle"
+        } else if text.lowercased().contains("wifi:") {
             return "wifi"
-        } else if text.lowercased().hasPrefix("http") {
+        } else if text.lowercased().hasPrefix("http") || text.lowercased().hasPrefix("https") {
             return "safari"
         } else if text.lowercased().contains("mailto:") || text.lowercased().contains("matmsg:") {
             return "envelope"
         } else if text.lowercased().contains("tel:") {
             return "phone"
-        } else if text.lowercased().contains("smsto:") {
+        } else if text.lowercased().contains("smsto:") || text.lowercased().contains("sms:") {
             return "message"
-        } else if text.lowercased().contains("geo:") {
+        } else if text.lowercased().contains("geo:") || text.lowercased().contains("maps:") {
             return "location"
         } else if text.lowercased().contains("vcard") || text.lowercased().contains("begin:vcard") {
             return "person.crop.circle"
+        } else if text.lowercased().contains("mecard:") {
+            return "person.text.rectangle"
+        } else if text.lowercased().contains("market:")
+            || text.lowercased().contains("play.google.com")
+        {
+            return "bag"
+        } else if text.lowercased().contains("bitcoin:") {
+            return "bitcoinsign.circle"
+        } else if text.lowercased().contains("facetime:") {
+            return "video"
+        } else if text.lowercased().contains("calendar")
+            || text.lowercased().contains("BEGIN:VEVENT")
+        {
+            return "calendar"
         } else if text.allSatisfy({ $0.isNumber }) {
-            // For numeric codes (likely barcodes), use barcode icon
-            return "barcode.viewfinder"
+            // For numeric codes (likely barcodes)
+            switch text.count {
+            case 8:  // EAN-8, UPC-E
+                return "cart.fill.badge.plus"
+            case 12:  // UPC-A
+                return "cart"
+            case 13:  // EAN-13, ISBN-13
+                return "book.closed"
+            case 14:  // ITF-14
+                return "shippingbox"
+            default:
+                return "barcode"
+            }
+        } else if text.contains(" ") && text.split(separator: " ").count > 3 {
+            // Likely text content
+            return "doc.text"
         } else {
             // Default icon based on type
             return "qrcode"
@@ -119,20 +195,30 @@ struct HistoryView: View {
 
     private func getTypeIcon(for type: AVMetadataObject.ObjectType) -> String {
         switch type {
-        case .ean8, .ean13, .upce:
-            return "barcode.viewfinder"
-        case .pdf417:
-            return "doc.viewfinder"
-        case .aztec:
-            return "square.grid.3x3.square"
-        case .dataMatrix:
-            return "square.grid.2x2"
-        case .code128, .code39, .code93, .interleaved2of5, .itf14:
-            return "barcode"
         case .qr:
             return "qrcode"
+        case .aztec:
+            return "aztec"
+        case .ean8, .upce:
+            return "cart.fill.badge.plus"
+        case .ean13:
+            return "cart"
+        case .pdf417:
+            return "doc.text.fill"
+        case .code128, .code39, .code39Mod43:
+            return "barcode"
+        case .code93:
+            return "barcode"
+        case .dataMatrix:
+            return "square.grid.2x2"
+        case .interleaved2of5:
+            return "number.square.fill"
+        case .itf14:
+            return "shippingbox.fill"
+        case .codabar:
+            return "creditcard.fill"
         default:
-            return "viewfinder"
+            return "barcode"
         }
     }
 
@@ -170,23 +256,54 @@ struct HistoryView: View {
     // MARK: - Load History from UserDefaults
     private func loadHistory() {
         // Load scan history with type information
-        if let savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] {
+        if let savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]]
+        {
             scanHistory = savedHistory.compactMap { item in
-                guard let text = item["text"],
-                      let typeString = item["type"] else {
+                guard let text = item["text"] as? String,
+                    let typeString = item["type"] as? String,
+                    let timestamp = item["timestamp"] as? Date
+                else {
                     return nil
                 }
-                return ScanHistoryItem(text: text, type: AVMetadataObject.ObjectType(rawValue: typeString))
+                return ScanHistoryItem(
+                    text: text, type: AVMetadataObject.ObjectType(rawValue: typeString),
+                    timestamp: timestamp)
             }
         }
-        
-        // Load create history
-        createHistory = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
+
+        // Load create history with timestamps and display type
+        if let savedCreateHistory = UserDefaults.standard.array(forKey: "createHistory")
+            as? [[String: Any]]
+        {
+            createHistory = savedCreateHistory.compactMap { item in
+                guard let text = item["text"] as? String,
+                    let typeString = item["type"] as? String,
+                    let timestamp = item["timestamp"] as? Date,
+                    let displayType = item["displayType"] as? String
+                else {
+                    return nil
+                }
+                return CreateHistoryItem(
+                    text: text,
+                    type: AVMetadataObject.ObjectType(rawValue: typeString),
+                    timestamp: timestamp,
+                    displayType: displayType
+                )
+            }
+        }
     }
 
-    // MARK: - Delete a Scan History Item
+    // Helper function to format relative time
+    private func getRelativeTime(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    // MARK: - Delete History Items
     private func deleteScanHistoryItem(at offsets: IndexSet) {
-        var savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: String]] ?? []
+        var savedHistory =
+            UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]] ?? []
         offsets.forEach { index in
             if index < savedHistory.count {
                 savedHistory.remove(at: index)
@@ -196,12 +313,15 @@ struct HistoryView: View {
         loadHistory()
     }
 
-    // MARK: - Delete a Create History Item
     private func deleteCreateHistoryItem(at offsets: IndexSet) {
-        var storedHistory = UserDefaults.standard.stringArray(forKey: "createHistory") ?? []
-        storedHistory.remove(atOffsets: offsets)
+        var storedHistory =
+            UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
+        offsets.forEach { index in
+            if index < storedHistory.count {
+                storedHistory.remove(at: index)
+            }
+        }
         UserDefaults.standard.setValue(storedHistory, forKey: "createHistory")
         loadHistory()
     }
 }
-

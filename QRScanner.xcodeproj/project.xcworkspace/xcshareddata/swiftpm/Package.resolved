@@ -1,40 +1,13 @@
 {
-  "originHash" : "937ed9099a7ec0a0b1a1a89d24cfa9165d4b71d9c04a07bb32ff1a38d1af22cb",
+  "originHash" : "070784de28955b65d1465fc22398be73cef417e9d65a68a641fae8ec6a844d29",
   "pins" : [
     {
-      "identity" : "cocoalumberjack",
+      "identity" : "rsbarcodes_swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
+      "location" : "https://github.com/yeahdongcn/RSBarcodes_Swift",
       "state" : {
-        "revision" : "4b8714a7fb84d42393314ce897127b3939885ec3",
-        "version" : "3.8.5"
-      }
-    },
-    {
-      "identity" : "svgkit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SVGKit/SVGKit",
-      "state" : {
-        "revision" : "58152b9f7c85eab239160b36ffdfd364aa43d666",
-        "version" : "3.0.0"
-      }
-    },
-    {
-      "identity" : "swift-log",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-log",
-      "state" : {
-        "revision" : "96a2f8a0fa41e9e09af4585e2724c4e825410b91",
-        "version" : "1.6.2"
-      }
-    },
-    {
-      "identity" : "swiftsvg",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/mchoe/SwiftSVG",
-      "state" : {
-        "branch" : "master",
-        "revision" : "88b9ee086b29019e35f6f49c8e30e5552eb8fa9d"
+        "revision" : "241de72a96f49b1545d5de3c00fae170c2675c41",
+        "version" : "5.2.0"
       }
     }
   ],

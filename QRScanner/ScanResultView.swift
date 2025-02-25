@@ -8,31 +8,40 @@
 import SwiftUI
 import CoreImage.CIFilterBuiltins
 import AVFoundation
+import RSBarcodes_Swift
 
 struct ScanResultView: View {
     let scannedText: String
     let barcodeType: AVMetadataObject.ObjectType
     let onDismiss: () -> Void
-
+    
+    @State private var generatedBarcode: UIImage?
+    @State private var isGeneratingQR = false
+    @State private var isSharingQR = false
+    @State private var qrShareURL: URL?
+    
     var body: some View {
         ScrollView {
-            VStack(spacing: 10) {
-                // Show QR Code Image only for QR codes
+            VStack(spacing: 20) {
+                // Display the barcode/QR code image
                 if barcodeType == .qr {
                     generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()
-                        .frame(width: 200, height: 200)
-                        .padding(20)
-                } else {
-                    // Show appropriate barcode icon for other types
-                    Image(systemName: getBarcodeIcon(for: barcodeType))
+                        .frame(maxWidth: 300)
+                        .padding()
+                } else if let barcode = generatedBarcode {
+                    Image(uiImage: barcode)
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 150, height: 100)
-                        .foregroundColor(.primary)
-                        .padding(20)
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(maxWidth: 300)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+
                 }
 
                 // Data Section
@@ -42,7 +51,7 @@ struct ScanResultView: View {
                 SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
 
                 // Action Buttons
-                ActionButtonsView(scannedText: scannedText, barcodeType: barcodeType)
+                ActionButtonsView(scannedText: scannedText, barcodeType: barcodeType, generatedBarcode: generatedBarcode)
 
                 Spacer()
             }
@@ -50,6 +59,20 @@ struct ScanResultView: View {
         }
         .navigationTitle("Scan Result")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if barcodeType != .qr {
+                generateBarcode()
+            }
+        }
+    }
+    
+    private func generateBarcode() {
+        let generator = RSUnifiedCodeGenerator.shared
+        let objectType = barcodeType.rawValue
+        
+        if let image = generator.generateCode(scannedText, machineReadableCodeObjectType: objectType) {
+            generatedBarcode = image
+        }
     }
 
     // MARK: - Generate QR Code Based on Theme
@@ -83,7 +106,9 @@ struct ScanResultView: View {
         let baseType = getBarcodeTypeName(type)
         
         // Then check for specific content patterns
-        if text.starts(with: "http") {
+        if text.starts(with: "upi://pay") {
+            return "\(baseType) (UPI Payment)"
+        } else if text.starts(with: "http") {
             return "\(baseType) (URL)"
         } else if text.contains("@") {
             return "\(baseType) (Email)"
@@ -181,6 +206,7 @@ struct SectionView: View {
 struct ActionButtonsView: View {
     let scannedText: String
     let barcodeType: AVMetadataObject.ObjectType
+    let generatedBarcode: UIImage?
     @State private var isCopied = false
     @State private var isSharingData = false
     @State private var isSharingQR = false
@@ -229,6 +255,13 @@ struct ActionButtonsView: View {
                 if let url = URL(string: scannedText), scannedText.starts(with: "http") {
                     ActionButton(icon: "safari", text: "Open in Safari") {
                         UIApplication.shared.open(url)
+                    }
+                    Divider()
+                }
+
+                if scannedText.starts(with: "upi://pay") {
+                    ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
+                        showUPIAppSelection(for: scannedText)
                     }
                     Divider()
                 }
@@ -344,38 +377,107 @@ struct ActionButtonsView: View {
                 Divider()
 
                 // Only show QR Code sharing for QR codes
-                if barcodeType == .qr {
-                    // ✅ Only allow tap when NOT generating QR
-                    ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
-                        if !isGeneratingQR {
-                            isGeneratingQR = true
-                            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                               let window = windowScene.windows.first {
-                                // ✅ Correctly determine dark mode
-                                let isDark: Bool
-                                if window.overrideUserInterfaceStyle == .unspecified {
-                                    isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
-                                } else {
-                                    isDark = window.overrideUserInterfaceStyle == .dark
-                                }
+                Group {
+                    if barcodeType == .qr {
+                        // QR Code sharing
+                        ActionButton(icon: "qrcode", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
+                            if !isGeneratingQR {
+                                isGeneratingQR = true
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let window = windowScene.windows.first {
+                                    let isDark = window.overrideUserInterfaceStyle == .unspecified ?
+                                        UIScreen.main.traitCollection.userInterfaceStyle == .dark :
+                                        window.overrideUserInterfaceStyle == .dark
 
-                                // ✅ Generate QR Code with correct theme
-                                if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
-                                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
-                                    try? image.pngData()?.write(to: tempURL) // ✅ Ensure file is written before sharing
-                                    qrShareURL = tempURL
-                                    isSharingQR = true
+                                    if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
+                                        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
+                                        try? image.pngData()?.write(to: tempURL)
+                                        qrShareURL = tempURL
+                                        isSharingQR = true
+                                    }
                                 }
-                            }
-                            // ✅ Ensure `isGeneratingQR` resets even if `windowScene` is nil
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                isGeneratingQR = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isGeneratingQR = false
+                                }
                             }
                         }
-                    }
-                    .sheet(isPresented: $isSharingQR) {
-                        if let qrShareURL = qrShareURL {
-                            ShareSheet(activityItems: [qrShareURL]) // ✅ Share Image
+                    } else {
+                        // Barcode sharing
+                        ActionButton(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share Barcode") {
+                            if !isGeneratingQR {
+                                isGeneratingQR = true
+                                
+                                // Determine optimal size based on barcode type
+                                let size: CGSize
+                                switch barcodeType {
+                                case .aztec:
+                                    size = CGSize(width: 1024, height: 1024)
+                                case .pdf417:
+                                    size = CGSize(width: 1536, height: 1024)
+                                case .ean8, .upce:
+                                    size = CGSize(width: 1536, height: 512)
+                                case .ean13:
+                                    size = CGSize(width: 2048, height: 512)
+                                case .code128, .code93:
+                                    size = CGSize(width: 2048, height: 512)
+                                case .code39, .code39Mod43:
+                                    size = CGSize(width: 2560, height: 512)
+                                case .itf14, .interleaved2of5:
+                                    size = CGSize(width: 2560, height: 512)
+                                // case .codabar:
+                                    // size = CGSize(width: 2048, height: 512)
+                                default:
+                                    size = CGSize(width: 2048, height: 512)
+                                }
+
+                                if let barcode = generatedBarcode {
+                                    // Create image context with white background
+                                    UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
+                                    
+                                    // Fill white background
+                                    UIColor.white.setFill()
+                                    UIRectFill(CGRect(origin: .zero, size: size))
+                                    
+                                    // Calculate aspect ratio preserving rect with horizontal padding
+                                    let horizontalPadding: CGFloat = 64  // Add padding constant
+                                    let originalAspect = barcode.size.width / barcode.size.height
+                                    let targetAspect = (size.width - (2 * horizontalPadding)) / size.height
+                                    
+                                    let drawRect: CGRect
+                                    if originalAspect > targetAspect {
+                                        // Image is wider than target - fit to padded width
+                                        let width = size.width - (2 * horizontalPadding)
+                                        let height = width / originalAspect
+                                        let y = (size.height - height) / 2
+                                        drawRect = CGRect(x: horizontalPadding, y: y, width: width, height: height)
+                                    } else {
+                                        // Image is taller than target - fit to height
+                                        let height = size.height
+                                        let width = height * originalAspect
+                                        let x = (size.width - width) / 2
+                                        drawRect = CGRect(x: x, y: 0, width: width, height: height)
+                                    }
+                                    
+                                    // Draw the barcode scaled up with proper aspect ratio
+                                    let context = UIGraphicsGetCurrentContext()
+                                    context?.interpolationQuality = .none  // Disable interpolation for sharp edges
+                                    context?.setShouldAntialias(false)  // Disable antialiasing for crisp lines
+                                    barcode.draw(in: drawRect)
+                                    
+                                    // Get the high quality image
+                                    if let highQualityImage = UIGraphicsGetCurrentContext()?.makeImage() {
+                                        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("Barcode.png")
+                                        try? UIImage(cgImage: highQualityImage).pngData()?.write(to: tempURL)  // Save as PNG for lossless quality
+                                        qrShareURL = tempURL
+                                        isSharingQR = true
+                                    }
+                                    UIGraphicsEndImageContext()
+                                }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isGeneratingQR = false
+                                }
+                            }
                         }
                     }
                 }
@@ -383,6 +485,11 @@ struct ActionButtonsView: View {
             .background(Color(UIColor.systemGray6))
             .cornerRadius(10)
             .padding(.horizontal)
+            .sheet(isPresented: $isSharingQR) {
+                if let qrShareURL = qrShareURL {
+                    ShareSheet(activityItems: [qrShareURL])
+                }
+            }
         }
         .padding(.top, 10)
     }    // MARK: - Share Function
@@ -510,5 +617,61 @@ struct ActionButtonCenter: View {
             .padding()
         }
         .disabled(text == "Generating QR...")
+    }
+}
+
+// MARK: - UPI App Selection
+func showUPIAppSelection(for upiLink: String) {
+    let alert = UIAlertController(title: "Choose Payment App", message: nil, preferredStyle: .actionSheet)
+
+    // Add all UPI apps
+    alert.addAction(UIAlertAction(title: "PhonePe", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "phonepe://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "Google Pay", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "gpay://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "Paytm", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "paytmmp://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "CRED", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "credpay://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "BHIM", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "bhim://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "Amazon Pay", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "amazonpay://upi/pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+    
+    alert.addAction(UIAlertAction(title: "WhatsApp", style: .default, handler: { _ in
+        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "upi://pay")) {
+            UIApplication.shared.open(url, options: [:]) { _ in }
+        }
+    }))
+
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
+    if let topController = UIApplication.shared.connectedScenes
+        .compactMap({ ($0 as? UIWindowScene)?.windows.first?.rootViewController })
+        .first {
+        topController.present(alert, animated: true, completion: nil)
     }
 }
