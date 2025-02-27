@@ -11,6 +11,8 @@ struct SettingsView: View {
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("themeMode") private var themeMode = "Device"
+    @AppStorage("askToCrop") private var askToCrop = false
+    @AppStorage("autoOpenLinks") private var autoOpenLinks = false
 
     let themeOptions = ["Device", "Light", "Dark"]
 
@@ -19,8 +21,35 @@ struct SettingsView: View {
             Form {
                 // MARK: - Scan Settings
                 Section(header: Text("Scan Settings")) {
-                    Toggle("Scan Sound", isOn: $scanSoundEnabled)
-                    Toggle("Scan Vibration", isOn: $vibrationEnabled)
+                    HStack {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .foregroundColor(.blue)
+                        Toggle("Scan Sound", isOn: $scanSoundEnabled)
+                    }
+                    HStack {
+                        Image(systemName: "iphone.radiowaves.left.and.right")
+                            .foregroundColor(.blue)
+                        Toggle("Scan Vibration", isOn: $vibrationEnabled)
+                    }
+                    HStack {
+                        Image(systemName: "crop")
+                            .foregroundColor(.blue)
+                        Toggle("Ask to Crop", isOn: $askToCrop)
+                    }
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack {
+                            Image(systemName: "link")
+                                .foregroundColor(.blue)
+                            Toggle("Auto Open Links", isOn: $autoOpenLinks)
+                        }
+                        HStack(spacing: 5) {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.gray)
+                            Text("Only secure HTTPS links will be opened automatically")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
                 
                 // MARK: - Appearance Settings
