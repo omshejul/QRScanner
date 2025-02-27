@@ -96,14 +96,14 @@ struct HistoryView: View {
                             ) {
                                 HStack {
                                     if item.type == .aztec {
-                                        Image("aztec")
+                                        Image("aztec-green")
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 20, height: 20)
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.green)
                                     } else {
                                         Image(systemName: getTypeIcon(for: item.type))
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.green)
                                     }
 
                                     VStack(alignment: .leading) {
