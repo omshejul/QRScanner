@@ -11,7 +11,6 @@ struct SettingsView: View {
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("themeMode") private var themeMode = "Device"
-    @AppStorage("askToCrop") private var askToCrop = false
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
 
     let themeOptions = ["Device", "Light", "Dark"]
@@ -30,11 +29,6 @@ struct SettingsView: View {
                         Image(systemName: "iphone.radiowaves.left.and.right")
                             .foregroundColor(.blue)
                         Toggle("Scan Vibration", isOn: $vibrationEnabled)
-                    }
-                    HStack {
-                        Image(systemName: "crop")
-                            .foregroundColor(.blue)
-                        Toggle("Ask to Crop", isOn: $askToCrop)
                     }
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {

@@ -7,6 +7,11 @@
 
 import SwiftUI
 import AVFoundation
+import Vision
+import PhotosUI
+import CoreImage
+import CoreImage.CIFilterBuiltins
+import UIKit
 
 struct QRCodeScannerContainer: View {
     @State private var scannedCode: String? = nil
@@ -17,7 +22,17 @@ struct QRCodeScannerContainer: View {
     @State private var showCameraSelector = false
     @State private var backCameras: [AVCaptureDevice] = []
     @State private var frontCameras: [AVCaptureDevice] = []
-    @State private var selectedLens: AVCaptureDevice? = nil
+    @State private var selectedLens: AVCaptureDevice? = nil {
+        didSet {
+            // When camera lens changes, update the flashlight state
+            if oldValue?.uniqueID != selectedLens?.uniqueID {
+                // Turn off flashlight when switching cameras
+                turnOffFlashlight()
+                // Update UI state to match actual device state
+                updateFlashlightState()
+            }
+        }
+    }
     @State private var isShowingPhotoPicker = false
     @State private var isScanning = false
     @State private var showNoCodeFound = false
@@ -167,6 +182,10 @@ struct QRCodeScannerContainer: View {
                     }
                 }
             }
+            .onAppear {
+                // Check and update flashlight state when view appears
+                updateFlashlightState()
+            }
         }
         .navigationBarHidden(true)
     }
@@ -194,8 +213,7 @@ struct QRCodeScannerContainer: View {
     // MARK: - Toggle Flashlight
     private func toggleFlashlight() {
         Haptic.medium()
-        flashlightEnabled.toggle()
-
+        
         guard let device = selectedLens,
               device.hasTorch,
               device.position == .back else {
@@ -205,18 +223,29 @@ struct QRCodeScannerContainer: View {
 
         do {
             try device.lockForConfiguration()
-            device.torchMode = flashlightEnabled ? .on : .off
+            
+            // Toggle the torch mode
+            if device.torchMode == .on {
+                device.torchMode = .off
+                flashlightEnabled = false
+            } else {
+                try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)
+                flashlightEnabled = true
+            }
+            
             device.unlockForConfiguration()
-
         } catch {
-            print("Flashlight could not be used")
-            flashlightEnabled = false
+            print("Flashlight could not be used: \(error)")
+            // Make sure UI state reflects actual state
+            updateFlashlightState()
         }
     }
 
     // MARK: - Turn Off Flashlight When Leaving Scanner
     private func turnOffFlashlight() {
+        // Update UI state first
         flashlightEnabled = false
+        
         guard let device = selectedLens,
               device.hasTorch,
               device.position == .back else { return }
@@ -226,7 +255,9 @@ struct QRCodeScannerContainer: View {
             device.torchMode = .off
             device.unlockForConfiguration()
         } catch {
-            print("Flashlight could not be turned off")
+            print("Flashlight could not be turned off: \(error)")
+            // Even if there's an error, keep UI state as off
+            flashlightEnabled = false
         }
     }
 
@@ -320,36 +351,115 @@ struct QRCodeScannerContainer: View {
         
         // Simulate a minimum scanning time for better UX
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            guard let ciImage = CIImage(image: image) else {
-                isScanning = false
-                showNoCodeFound = true
+            guard let cgImage = image.cgImage else {
+                DispatchQueue.main.async {
+                    isScanning = false
+                    showNoCodeFound = true
+                    Haptic.error()
+                }
                 return
             }
             
-            let detector = CIDetector(ofType: CIDetectorTypeQRCode,
-                                    context: nil,
-                                    options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
-            
-            if let features = detector?.features(in: ciImage) as? [CIQRCodeFeature],
-               let qrCodeValue = features.first?.messageString {
-                scannedCode = qrCodeValue
-                scannedType = .qr
-                isShowingResult = true
-                playScanSound()
-                saveToScanHistory(qrCodeValue, type: .qr)
-                
-                // Auto-open links if enabled and the scanned code is a URL
-                if autoOpenLinks,
-                   let url = URL(string: qrCodeValue),
-                   url.scheme?.lowercased() == "https",
-                   UIApplication.shared.canOpenURL(url) {
-                    UIApplication.shared.open(url)
+            // Create Vision barcode detection request
+            let request = VNDetectBarcodesRequest { request, error in
+                if let error = error {
+                    print("Vision error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        isScanning = false
+                        showNoCodeFound = true
+                        Haptic.error()
+                    }
+                    return
                 }
-            } else {
-                Haptic.error()
-                showNoCodeFound = true
+                
+                guard let results = request.results as? [VNBarcodeObservation], !results.isEmpty else {
+                    DispatchQueue.main.async {
+                        isScanning = false
+                        showNoCodeFound = true
+                        Haptic.error()
+                    }
+                    return
+                }
+                
+                // Process the first detected barcode
+                if let barcode = results.first, let payloadString = barcode.payloadStringValue {
+                    DispatchQueue.main.async {
+                        scannedCode = payloadString
+                        scannedType = convertToAVMetadataType(from: barcode.symbology)
+                        isShowingResult = true
+                        playScanSound()
+                        saveToScanHistory(payloadString, type: convertToAVMetadataType(from: barcode.symbology))
+                        
+                        // Auto-open links if enabled and the scanned code is a URL
+                        if autoOpenLinks,
+                           let url = URL(string: payloadString),
+                           url.scheme?.lowercased() == "https",
+                           UIApplication.shared.canOpenURL(url) {
+                            UIApplication.shared.open(url)
+                        }
+                        
+                        isScanning = false
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        Haptic.error()
+                        isScanning = false
+                        showNoCodeFound = true
+                    }
+                }
             }
-            isScanning = false
+            
+            // Process the image with Vision
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            do {
+                try handler.perform([request])
+            } catch {
+                print("Failed to perform Vision request: \(error)")
+                DispatchQueue.main.async {
+                    isScanning = false
+                    showNoCodeFound = true
+                    Haptic.error()
+                }
+            }
+        }
+    }
+
+    // Convert Vision barcode symbology to AVMetadataObject.ObjectType
+    private func convertToAVMetadataType(from symbology: VNBarcodeSymbology) -> AVMetadataObject.ObjectType {
+        switch symbology {
+        case .qr: return .qr
+        case .aztec: return .aztec
+        case .code39: return .code39
+        case .code93: return .code93
+        case .code128: return .code128
+        case .dataMatrix: return .dataMatrix
+        case .ean8: return .ean8
+        case .ean13: return .ean13
+        case .itf14: return .itf14
+        case .pdf417: return .pdf417
+        case .upce: return .upce
+        default: return .qr // Default to QR if no direct mapping
+        }
+    }
+
+    // MARK: - Update Flashlight State
+    private func updateFlashlightState() {
+        guard let device = selectedLens,
+              device.hasTorch,
+              device.position == .back else {
+            // If no valid torch device, ensure flashlight is shown as off
+            flashlightEnabled = false
+            return
+        }
+        
+        // Check the actual torch mode and update the UI state to match
+        do {
+            try device.lockForConfiguration()
+            flashlightEnabled = (device.torchMode == .on)
+            device.unlockForConfiguration()
+        } catch {
+            print("Could not check flashlight state: \(error)")
+            flashlightEnabled = false
         }
     }
 }
@@ -511,27 +621,25 @@ private struct CameraLensButton: View {
     let magnificationText: String
     
     var body: some View {
-
         Button(action: action) {
-            if camera.position == .front {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? Color("customYellow") : .secondary)
-                    .frame(width: 40, height: 40) // Fixed frame size
-                    .background(isSelected ? .thickMaterial : .thinMaterial)
-                    .clipShape(Circle())
-                    .scaleEffect(isSelected ? 1.2 : 1.0) // Scale effect for size increase
-            } else {
-                Text(magnificationText)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(isSelected ? Color("customYellow") : .secondary)
-                    .frame(width: 40, height: 40) // Fixed frame size
-                    .background(isSelected ? .thickMaterial : .thinMaterial)
-                    .clipShape(Circle())
-                    .scaleEffect(isSelected ? 1.2 : 1.0) // Scale effect for size increase
+            Group {
+                if camera.position == .front {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(isSelected ? Color("customYellow") : .secondary)
+                } else {
+                    Text(magnificationText)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(isSelected ? Color("customYellow") : .secondary)
+                }
             }
+            .frame(width: 40, height: 40)
+            .background(
+                Circle()
+                    .fill(isSelected ? Color.gray.opacity(0.3) : Color.clear)
+            )
+            .scaleEffect(isSelected ? 1.2 : 1.0)
         }
-        
     }
 }
 
@@ -579,7 +687,7 @@ private struct CameraLensSelector: View {
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
                         action: { 
                             Haptic.soft()
-                            onSelect(camera) 
+                            onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
                     )
@@ -590,7 +698,7 @@ private struct CameraLensSelector: View {
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
                         action: { 
                             Haptic.soft()
-                            onSelect(camera) 
+                            onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
                     )
@@ -607,7 +715,6 @@ private struct CameraLensSelector: View {
             Spacer()
         }
         .scaleEffect(0.75)
-
     }
 }
 
@@ -659,43 +766,69 @@ private struct BottomControls: View {
 
 // MARK: - Image Picker
 struct ImagePicker: UIViewControllerRepresentable {
-    @AppStorage("askToCrop") private var askToCrop = false
     let completion: (UIImage?) -> Void
     
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var configuration = PHPickerConfiguration()
+        configuration.filter = .images
+        configuration.selectionLimit = 1
+        
+        // Exclude location and caption data by default
+        configuration.preferredAssetRepresentationMode = .current
+        
+        let picker = PHPickerViewController(configuration: configuration)
         picker.delegate = context.coordinator
-        picker.sourceType = .photoLibrary
-        if askToCrop {
-            picker.allowsEditing = true // Enable built-in cropping
-        }
         return picker
     }
     
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         Coordinator(completion: completion)
     }
     
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let completion: (UIImage?) -> Void
         
         init(completion: @escaping (UIImage?) -> Void) {
             self.completion = completion
+            super.init()
         }
         
-        func imagePickerController(_ picker: UIImagePickerController,
-                                 didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            // Use the edited image if available, otherwise use original
-            let image = info[.editedImage] as? UIImage ?? info[.originalImage] as? UIImage
-            completion(image)
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
+            
+            guard let result = results.first else {
+                completion(nil)
+                return
+            }
+            
+            if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
+                    guard let self = self, let image = image as? UIImage else {
+                        DispatchQueue.main.async {
+                            self?.completion(nil)
+                        }
+                        return
+                    }
+                    
+                    // Strip metadata to ensure no location data is included
+                    let strippedImage = self.stripMetadata(from: image)
+                    
+                    DispatchQueue.main.async {
+                        self.completion(strippedImage)
+                    }
+                }
+            }
         }
         
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            completion(nil)
-            picker.dismiss(animated: true)
+        // Strip metadata from image to ensure no location or caption data
+        private func stripMetadata(from image: UIImage) -> UIImage {
+            guard let cgImage = image.cgImage else { return image }
+            
+            // Create a new image without metadata
+            let newImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+            return newImage
         }
     }
 }
@@ -716,10 +849,17 @@ private struct ScanningOverlay: View {
                 Text("Scanning for Code...")
                     .font(.headline)
                     .foregroundColor(.primary)
+                
+                Text("Please wait while we analyze the image")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
             .padding(30)
             .background(.thinMaterial)
             .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
         }
         .transition(.opacity)
     }
