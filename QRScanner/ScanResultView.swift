@@ -252,28 +252,28 @@ struct ActionButtonsView: View {
 
             VStack(spacing: 0) {
                 
-                if let url = URL(string: scannedText), scannedText.starts(with: "http") {
+                if let url = URL(string: scannedText), scannedText.lowercased().starts(with: "http") {
                     ActionButton(icon: "safari", text: "Open in Safari") {
                         UIApplication.shared.open(url)
                     }
                     Divider()
                 }
 
-                if scannedText.starts(with: "upi://pay") {
+                if scannedText.lowercased().starts(with: "upi://pay") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
                         showUPIAppSelection(for: scannedText)
                     }
                     Divider()
                 }
 
-                if scannedText.starts(with: "mailto:") || scannedText.starts(with: "MATMSG:") {
+                if scannedText.lowercased().starts(with: "mailto:") || scannedText.starts(with: "MATMSG:") {
                     ActionButton(icon: "envelope", text: "Send Email") {
                         openMATMSGEmail(scannedText)
                     }
                     Divider()
                 }
 
-                if scannedText.starts(with: "tel:") {
+                if scannedText.lowercased().starts(with: "tel:") {
                     ActionButton(icon: "phone", text: "Call") {
                         if let url = URL(string: scannedText) {
                             UIApplication.shared.open(url)
@@ -282,7 +282,7 @@ struct ActionButtonsView: View {
                     Divider()
                 }
 
-                if scannedText.starts(with: "smsto:") {
+                if scannedText.lowercased().starts(with: "smsto:") {
                     ActionButton(icon: "message", text: "Send SMS") {
                         if let url = URL(string: scannedText) {
                             UIApplication.shared.open(url)
@@ -310,7 +310,7 @@ struct ActionButtonsView: View {
                     Divider()
                 }
 
-                if scannedText.contains("BEGIN:VCARD") {
+                if scannedText.lowercased().contains("begin:vcard") {
                     ActionButton(icon: "person.crop.circle", text: "Save Contact") {
                         saveContact(scannedText)
                     }
