@@ -8,6 +8,7 @@
 import SwiftUI
 import CoreImage.CIFilterBuiltins
 import AVFoundation
+import ContactsUI
 
 enum QRType: String, CaseIterable {
     case wifi = "WiFi"
@@ -33,6 +34,8 @@ struct BASICQRCodeView: View {
     @State private var isGeneratingQR = false
     @State private var isQRReady = false
     @State private var errorMessage: String?
+    @State private var showContactPicker = false
+    @State private var contactPickerField: String? = nil
 
     let encryptionOptions = ["WPA", "WEP", "None"]
 
@@ -40,10 +43,24 @@ struct BASICQRCodeView: View {
         ScrollView {
             VStack(spacing: 20) {
                 if type == .email {
-                    InputField(title: "Enter Recipient Email",
-                               info: "Enter the email address where the message will be sent.",
-                               text: $primaryInput,
-                               keyboardType: .emailAddress)
+                    ZStack(alignment: .trailingFirstTextBaseline) {
+                        InputField(title: "Enter Recipient Email",
+                                info: "Enter the email address where the message will be sent.",
+                                text: $primaryInput,
+                                keyboardType: .emailAddress)
+
+                        Button(action: {
+                            contactPickerField = "email"
+                            showContactPicker = true
+                            errorMessage = nil
+                        }) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                                .background(Circle().fill(Color.blue.opacity(0.1)))
+                        }
+                        .padding(.trailing, 30)
+                    }
                     
                     InputField(title: "Enter Subject (Optional)",
                                info: "You can add a subject for the email.",
@@ -61,10 +78,24 @@ struct BASICQRCodeView: View {
                 }
 
                 else if type == .sms {
-                    InputField(title: "Enter Phone Number",
+                    ZStack(alignment: .trailingFirstTextBaseline) {
+                        InputField(title: "Enter Phone Number",
                                info: "Enter the phone number to send the SMS message to.",
                                text: $primaryInput,
                                keyboardType: .phonePad)
+                        
+                        Button(action: {
+                            contactPickerField = "phone"
+                            showContactPicker = true
+                            errorMessage = nil
+                        }) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                                .background(Circle().fill(Color.blue.opacity(0.1)))
+                        }
+                        .padding(.trailing, 30)
+                    }
 
                     InputField(title: "Enter Message (Optional)",
                                info: "",
@@ -116,6 +147,38 @@ struct BASICQRCodeView: View {
                 }
 
                 else if type == .contact {
+                    VStack {
+                        HStack {
+                            Text("Select from Contacts")
+                                .font(.headline)
+                            Spacer()
+                            Button(action: {
+                                contactPickerField = "fullcontact"
+                                showContactPicker = true
+                                errorMessage = nil
+                            }) {
+                                HStack {
+                                    Image(systemName: "person.crop.circle.badge.plus")
+                                    Text("Select Contact")
+                                }
+                                .padding(8)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        Text("Or enter details manually:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
+                    }
+                    
                     ContactFields(optionalFields: $optionalFields)
                 }
                 else if type == .web {
@@ -124,10 +187,24 @@ struct BASICQRCodeView: View {
                                text: $primaryInput)
                 }
                 else if type == .phone {
-                    InputField(title: getPlaceholder(),
+                    ZStack(alignment: .trailingFirstTextBaseline) {
+                        InputField(title: getPlaceholder(),
                                info: "Enter the phone number with or without a country code",
                                text: $primaryInput,
                                keyboardType: .phonePad)
+                        
+                        Button(action: {
+                            contactPickerField = "phone"
+                            showContactPicker = true
+                            errorMessage = nil
+                        }) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                                .background(Circle().fill(Color.blue.opacity(0.1)))
+                        }
+                        .padding(.trailing, 30)
+                    }
                 }
 
                 else {
@@ -170,12 +247,83 @@ struct BASICQRCodeView: View {
             .padding(4)
             .toolbar {
                 ToolbarItem(placement: .keyboard) {
-                    Button("Done") { hideKeyboard() }
+ 
+                    Button(action: { hideKeyboard() }) {
+                        HStack() {
+                            Text("Done")
+                            Image(systemName: "keyboard.chevron.compact.down")
+                        }
+                    }
+
+                    .padding(.horizontal)
                 }
             }
         }
         .onTapGesture { hideKeyboard() }
         .navigationTitle(type.rawValue)
+        .sheet(isPresented: $showContactPicker) {
+            ContactPickerView(selectedField: contactPickerField ?? "", onContactSelected: handleContactSelection)
+        }
+    }
+
+    private func handleContactSelection(contact: CNContact) {
+        switch contactPickerField {
+        case "email":
+            if let email = contact.emailAddresses.first?.value as String? {
+                primaryInput = email
+            } else {
+                errorMessage = "No email found in the selected contact."
+            }
+        case "phone":
+            if let phone = contact.phoneNumbers.first?.value.stringValue {
+                primaryInput = phone
+            } else {
+                errorMessage = "No phone number found in the selected contact."
+            }
+        case "fullcontact":
+            // Fill in all contact fields
+            if let name = [contact.givenName, contact.familyName].filter({ !$0.isEmpty }).joined(separator: " ").nilIfEmpty() {
+                optionalFields["name"] = name
+            }
+            
+            if let email = contact.emailAddresses.first?.value as String? {
+                optionalFields["email"] = email
+            }
+            
+            if let phone = contact.phoneNumbers.first?.value.stringValue {
+                optionalFields["phone"] = phone
+            }
+            
+            if let company = contact.organizationName.nilIfEmpty() {
+                optionalFields["company"] = company
+            }
+            
+            if let jobTitle = contact.jobTitle.nilIfEmpty() {
+                optionalFields["jobTitle"] = jobTitle
+            }
+            
+            if let url = contact.urlAddresses.first?.value as String? {
+                optionalFields["website"] = url
+            }
+            
+            if let address = contact.postalAddresses.first {
+                let addressComponents = [
+                    address.value.street,
+                    address.value.city,
+                    address.value.state,
+                    address.value.postalCode,
+                    address.value.country
+                ].filter { !$0.isEmpty }
+                
+                optionalFields["address"] = addressComponents.joined(separator: ", ")
+            }
+            
+            if let note = contact.note.nilIfEmpty() {
+                optionalFields["notes"] = note
+            }
+        default:
+            break
+        }
     }
 
     private func generateQRCode() {
@@ -335,6 +483,7 @@ struct BASICQRCodeView: View {
         }
     }
 }
+
 struct InputField: View {
     let title: String
     let info: String?
@@ -438,5 +587,84 @@ struct GenerateQRButton: View {
         }
         .padding(.horizontal)
         .disabled(isDisabled)
+    }
+}
+
+// Extension to help with optional strings
+extension String {
+    func nilIfEmpty() -> String? {
+        return self.isEmpty ? nil : self
+    }
+}
+
+// Contact Picker View using UIViewControllerRepresentable
+struct ContactPickerView: UIViewControllerRepresentable {
+    let selectedField: String
+    let onContactSelected: (CNContact) -> Void
+    
+    func makeUIViewController(context: Context) -> CNContactPickerViewController {
+        let picker = CNContactPickerViewController()
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: CNContactPickerViewController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, CNContactPickerDelegate {
+        let parent: ContactPickerView
+        
+        init(_ parent: ContactPickerView) {
+            self.parent = parent
+        }
+        
+        func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
+            parent.onContactSelected(contact)
+        }
+        
+        func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+            // Handle cancel if needed
+        }
+    }
+}
+// MARK: - Preview
+struct BASICQRCodeView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Preview for WiFi QR code
+            BASICQRCodeView(type: .wifi)
+                .previewDisplayName("WiFi QR Code")
+            
+            // Preview for Web URL QR code
+            BASICQRCodeView(type: .web)
+                .previewDisplayName("Web URL QR Code")
+            
+            // Preview for Text QR code
+            BASICQRCodeView(type: .text)
+                .previewDisplayName("Text QR Code")
+            
+            // Preview for Email QR code
+            BASICQRCodeView(type: .email)
+                .previewDisplayName("Email QR Code")
+            
+            // Preview for Phone QR code
+            BASICQRCodeView(type: .phone)
+                .previewDisplayName("Phone QR Code")
+            
+            // Preview for SMS QR code
+            BASICQRCodeView(type: .sms)
+                .previewDisplayName("SMS QR Code")
+            
+            // Preview for Location QR code
+            BASICQRCodeView(type: .location)
+                .previewDisplayName("Location QR Code")
+            
+            // Preview for Contact QR code
+            BASICQRCodeView(type: .contact)
+                .previewDisplayName("Contact QR Code")
+        }
     }
 }
