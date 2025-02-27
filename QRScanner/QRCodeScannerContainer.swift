@@ -120,7 +120,7 @@ struct QRCodeScannerContainer: View {
 
                     // Camera Controls
                     GeometryReader { proxy in
-                        VStack(spacing: 20) {
+                        VStack(spacing: 10) {
                             // Camera Lens Selector
                             CameraLensSelector(
                                 backCameras: backCameras,
@@ -350,7 +350,7 @@ struct QRCodeScannerContainer: View {
         showNoCodeFound = false
         
         // Simulate a minimum scanning time for better UX
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             guard let cgImage = image.cgImage else {
                 DispatchQueue.main.async {
                     isScanning = false
@@ -626,17 +626,17 @@ private struct CameraLensButton: View {
                 if camera.position == .front {
                     Image(systemName: "person.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(isSelected ? Color("customYellow") : .secondary)
+                        .foregroundColor(isSelected ? Color.yellow : .white)
                 } else {
                     Text(magnificationText)
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(isSelected ? Color("customYellow") : .secondary)
+                        .foregroundColor(isSelected ? Color.yellow : .white)
                 }
             }
             .frame(width: 40, height: 40)
             .background(
                 Circle()
-                    .fill(isSelected ? Color.gray.opacity(0.3) : Color.clear)
+                    .fill(isSelected ? Color.black.opacity(0.2) : Color.clear)
             )
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }
@@ -709,7 +709,11 @@ private struct CameraLensSelector: View {
             .background(
                 RoundedRectangle(cornerRadius: 30)
                     .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 0)
+                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 0)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(Color.black.opacity(0.1))
             )
             .frame(height: 60)
             Spacer()
@@ -735,7 +739,7 @@ private struct BottomControls: View {
                     .font(.system(size: 24))
                     .foregroundColor(.secondary)
                     .frame(width: 50, height: 50)
-                    .background(.thickMaterial)
+                    .background(.thinMaterial)
                     .clipShape(Circle())
             }
             
@@ -744,18 +748,18 @@ private struct BottomControls: View {
                 Button(action: onFlashlight) {
                     Image(systemName: flashlightEnabled ? "flashlight.on.fill" : "flashlight.off.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(flashlightEnabled ? Color("customYellow") : .secondary)
+                        .foregroundColor(flashlightEnabled ? Color.yellow : .secondary)
                         .frame(width: 50, height: 50)
-                        .background(.thickMaterial)
+                        .background(flashlightEnabled ? .thickMaterial : .thinMaterial)
                         .clipShape(Circle())
                 }
             } else {
                 Button(action: {}) {
                     Image(systemName: "flashlight.slash")
                         .font(.system(size: 24))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .frame(width: 50, height: 50)
-                        .background(.ultraThickMaterial)
+                        .background(.thinMaterial)
                         .clipShape(Circle())
                 }
                 .disabled(true)
@@ -878,33 +882,48 @@ private struct NoCodeFoundOverlay: View {
                     dismissAction()
                 }
             
-            VStack(spacing: 20) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 50))
-                    .foregroundColor(.primary)
+            VStack(spacing: 16) {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 48))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.red)
                 
                 Text("No Code Found")
                     .font(.headline)
                     .foregroundColor(.primary)
                 
-                Button("Try Again") {
+                Text("No recognizable QR code or barcode in image. Please try a different image or ensure the code is clearly visible and properly lit.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                Button {
+                    Haptic.soft()
                     dismissAction()
+                } label: {
+                    Text("Try Again")
+                        .font(.headline)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
-                .padding(.horizontal, 30)
-                .padding(.vertical, 12)
-                .background(.secondary)
-                .foregroundColor(.primary)
-                .cornerRadius(10)
+                .padding(.top, 4)
             }
-            .padding(30)
-            .background(.thinMaterial)
-            .cornerRadius(20)
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.regularMaterial)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(.red, lineWidth: 1)
-                    .opacity(0.5)
+                    .stroke(.red.opacity(0.3), lineWidth: 1)
             )
+            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 3)
+            .frame(maxWidth: 280)
         }
-        .transition(.opacity)
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+        .animation(.spring(response: 0.3), value: true)
     }
 }
