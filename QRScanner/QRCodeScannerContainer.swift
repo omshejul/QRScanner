@@ -12,6 +12,7 @@ import PhotosUI
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
+import Foundation
 
 struct QRCodeScannerContainer: View {
     @State private var scannedCode: String? = nil
@@ -79,12 +80,7 @@ struct QRCodeScannerContainer: View {
                         saveToScanHistory(code, type: type)
                         
                         // Auto-open HTTPS links if enabled
-                        if autoOpenLinks,
-                           let url = URL(string: code),
-                           url.scheme?.lowercased() == "https",
-                           UIApplication.shared.canOpenURL(url) {
-                            UIApplication.shared.open(url)
-                        }
+                        detectAndOpenURL(from: code)
                     }, selectedDevice: selectedLens)
                     .edgesIgnoringSafeArea(.all)
 
@@ -391,12 +387,7 @@ struct QRCodeScannerContainer: View {
                         saveToScanHistory(payloadString, type: convertToAVMetadataType(from: barcode.symbology))
                         
                         // Auto-open links if enabled and the scanned code is a URL
-                        if autoOpenLinks,
-                           let url = URL(string: payloadString),
-                           url.scheme?.lowercased() == "https",
-                           UIApplication.shared.canOpenURL(url) {
-                            UIApplication.shared.open(url)
-                        }
+                        detectAndOpenURL(from: payloadString)
                         
                         isScanning = false
                     }
@@ -460,6 +451,61 @@ struct QRCodeScannerContainer: View {
         } catch {
             print("Could not check flashlight state: \(error)")
             flashlightEnabled = false
+        }
+    }
+
+    // MARK: - Enhanced URL Detection
+    private func detectAndOpenURL(from text: String) {
+        guard autoOpenLinks else { return }
+        
+        // First try standard URL detection
+        if let url = URL(string: text), 
+           url.scheme?.lowercased() == "https", 
+           UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            return
+        }
+        
+        // Use NSDataDetector for more advanced URL detection
+        do {
+            let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+            let matches = detector.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+            
+            if let match = matches.first, let url = match.url, UIApplication.shared.canOpenURL(url) {
+                // Only open HTTPS URLs automatically for security
+                if url.scheme?.lowercased() == "https" {
+                    UIApplication.shared.open(url)
+                    return
+                }
+            }
+        } catch {
+            print("Error creating NSDataDetector: \(error)")
+        }
+        
+        // Custom regex for URLs without scheme (add https:// prefix)
+        let patterns = [
+            // Domain with TLD (e.g., example.com)
+            "^([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}(/.*)?$",
+            // Domain with www prefix (e.g., www.example.com)
+            "^www\\.[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.([a-zA-Z]{2,})(/.*)?$"
+        ]
+        
+        for pattern in patterns {
+            do {
+                let regex = try NSRegularExpression(pattern: pattern, options: [])
+                let range = NSRange(location: 0, length: text.utf16.count)
+                
+                if regex.firstMatch(in: text, options: [], range: range) != nil {
+                    // Add https:// prefix and try again
+                    let urlString = "https://" + text
+                    if let url = URL(string: urlString), UIApplication.shared.canOpenURL(url) {
+                        UIApplication.shared.open(url)
+                        return
+                    }
+                }
+            } catch {
+                print("Error with regex pattern: \(error)")
+            }
         }
     }
 }
@@ -709,11 +755,11 @@ private struct CameraLensSelector: View {
             .background(
                 RoundedRectangle(cornerRadius: 30)
                     .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 0)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 0)
             )
             .background(
                 RoundedRectangle(cornerRadius: 30)
-                    .fill(Color.black.opacity(0.1))
+                    .fill(Color.black.opacity(0.15))
             )
             .frame(height: 60)
             Spacer()
