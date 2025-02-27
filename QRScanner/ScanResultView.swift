@@ -9,6 +9,8 @@ import SwiftUI
 import CoreImage.CIFilterBuiltins
 import AVFoundation
 import RSBarcodes_Swift
+import LinkPresentation
+//import URLDetectorUtility
 
 struct ScanResultView: View {
     let scannedText: String
@@ -19,6 +21,9 @@ struct ScanResultView: View {
     @State private var isGeneratingQR = false
     @State private var isSharingQR = false
     @State private var qrShareURL: URL?
+    @State private var isURL = false
+    @State private var formattedURLString: String = ""
+    @State private var extractedURLs: [URL] = []
     
     var body: some View {
         ScrollView {
@@ -41,17 +46,62 @@ struct ScanResultView: View {
                         .background(Color.white)
                         .cornerRadius(16)
                         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                }
+                
+                // Link Preview for URLs
+                if isURL && URLDetectorUtility.shared.isValidWebLink(formattedURLString) {
+                    VStack(alignment: .leading) {
+                        Text("LINK PREVIEW")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .textCase(.uppercase)
+                            .padding(.horizontal)
+                        
+                        RichLinkPreview(urlString: formattedURLString)
+                            .padding(.horizontal)
+                            .frame(maxWidth: .infinity)
+                    }
+                    // Data Section
+                    SectionView(title: "DATA", content: scannedText)
+                    
+                    // Type Section for URLs
+                    SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
+                } else if !extractedURLs.isEmpty, let firstURL = extractedURLs.first, URLDetectorUtility.shared.isValidWebLink(firstURL.absoluteString) {
+                    // Show link preview for extracted URLs
+                    VStack(alignment: .leading) {
+                        Text("LINK PREVIEW")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .textCase(.uppercase)
+                            .padding(.horizontal)
+                        
+                        RichLinkPreview(urlString: firstURL.absoluteString)
+                            .padding(.horizontal)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Data Section
+                    SectionView(title: "DATA", content: scannedText)
+                    
+                    // Type Section
+                    SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
+                } else {
+                    // Data Section (only shown for non-URLs)
+                    SectionView(title: "DATA", content: scannedText)
 
+                    // Type Section
+                    SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
                 }
 
-                // Data Section
-                SectionView(title: "DATA", content: scannedText)
-
-                // Type Section
-                SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
-
                 // Action Buttons
-                ActionButtonsView(scannedText: scannedText, barcodeType: barcodeType, generatedBarcode: generatedBarcode)
+                ActionButtonsView(
+                    scannedText: scannedText, 
+                    barcodeType: barcodeType, 
+                    generatedBarcode: generatedBarcode,
+                    extractedURLs: extractedURLs,
+                    formattedURLString: formattedURLString,
+                    isURL: isURL
+                )
 
                 Spacer()
             }
@@ -63,6 +113,23 @@ struct ScanResultView: View {
             if barcodeType != .qr {
                 generateBarcode()
             }
+            
+            // Enhanced URL detection
+            checkForURLs()
+        }
+    }
+    
+    private func checkForURLs() {
+        // First check if it's a direct URL
+        isURL = URLDetectorUtility.shared.isValidWebLink(scannedText)
+        
+        if isURL {
+            formattedURLString = URLDetectorUtility.shared.formatURLString(scannedText)
+            // Double check that the formatted URL is valid
+            isURL = URLDetectorUtility.shared.isValidWebLink(formattedURLString)
+        } else {
+            // Try to extract URLs from text
+            extractedURLs = URLDetectorUtility.shared.extractURLs(from: scannedText)
         }
     }
     
@@ -207,12 +274,16 @@ struct ActionButtonsView: View {
     let scannedText: String
     let barcodeType: AVMetadataObject.ObjectType
     let generatedBarcode: UIImage?
+    let extractedURLs: [URL]
+    let formattedURLString: String
+    let isURL: Bool
     @State private var isCopied = false
     @State private var isSharingData = false
     @State private var isSharingQR = false
     @State private var qrImage: UIImage?
     @State private var isGeneratingQR = false
     @State private var qrShareURL: URL?
+    @State private var detectedURL: URL?
 
     // MARK: - Get Region-Specific Amazon URL
     private func getAmazonDomain() -> String {
@@ -252,11 +323,27 @@ struct ActionButtonsView: View {
 
             VStack(spacing: 0) {
                 
-                if let url = URL(string: scannedText), scannedText.lowercased().starts(with: "http") {
-                    ActionButton(icon: "safari", text: "Open in Safari") {
-                        UIApplication.shared.open(url)
+                // Check for URLs using URLDetectorUtility
+                Group {
+                    if let url = URL(string: scannedText), scannedText.lowercased().starts(with: "http") {
+                        // Direct HTTP URL
+                        ActionButton(icon: "safari", text: "Open in Safari") {
+                            UIApplication.shared.open(url)
+                        }
+                        Divider()
+                    } else if isURL, let url = URL(string: formattedURLString), URLDetectorUtility.shared.isValidWebLink(formattedURLString) {
+                        // Valid web link detected by URLDetectorUtility
+                        ActionButton(icon: "safari", text: "Open in Safari") {
+                            UIApplication.shared.open(url)
+                        }
+                        Divider()
+                    } else if !extractedURLs.isEmpty, let firstURL = extractedURLs.first, URLDetectorUtility.shared.isValidWebLink(firstURL.absoluteString) {
+                        // URL extracted from text
+                        ActionButton(icon: "safari", text: "Open URL in Safari") {
+                            UIApplication.shared.open(firstURL)
+                        }
+                        Divider()
                     }
-                    Divider()
                 }
 
                 if scannedText.lowercased().starts(with: "upi://pay") {
@@ -492,21 +579,6 @@ struct ActionButtonsView: View {
             }
         }
         .padding(.top, 10)
-    }    // MARK: - Share Function
-    func shareScannedText() {
-        let activityItems: [Any] = scannedText.starts(with: "http") ? [URL(string: scannedText)!] : [scannedText]
-        let activityVC = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-        if let topController = UIApplication.shared.connectedScenes
-            .compactMap({ ($0 as? UIWindowScene)?.windows.first?.rootViewController })
-            .first {
-            topController.present(activityVC, animated: true, completion: nil)
-        }
-    }
-
-    // MARK: - Connect to WiFi
-    func connectToWiFi(_ text: String) {
-        print("WiFi QR detected: \(text)")
-
     }
 
     // MARK: - Save Contact (vCard)
@@ -568,7 +640,7 @@ func generateQRCodeImage(from string: String, isDarkMode: Bool, size: CGFloat = 
     return nil
 }
 
-// ✅ Prevents double taps while generating
+// MARK: - Action Button
 struct ActionButton: View {
     let icon: String
     let text: String
@@ -673,5 +745,222 @@ func showUPIAppSelection(for upiLink: String) {
         .compactMap({ ($0 as? UIWindowScene)?.windows.first?.rootViewController })
         .first {
         topController.present(alert, animated: true, completion: nil)
+    }
+}
+
+// MARK: - Link Preview View
+struct LinkPreviewView: UIViewRepresentable {
+    let metadata: LPLinkMetadata
+    
+    func makeUIView(context: Context) -> LPLinkView {
+        let linkView = LPLinkView(metadata: metadata)
+        linkView.sizeToFit()
+        return linkView
+    }
+    
+    func updateUIView(_ uiView: LPLinkView, context: Context) {
+        uiView.metadata = metadata
+    }
+}
+
+// MARK: - Enhanced Link Preview View
+struct EnhancedLinkPreviewView: View {
+    let metadata: LPLinkMetadata
+    
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            // Standard link preview
+            LinkPreviewView(metadata: metadata)
+                .frame(height: 150)
+                .cornerRadius(12)
+            
+            // Overlapping title with domain
+            VStack(alignment: .leading, spacing: 2) {
+                if let title = metadata.title, !title.isEmpty {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .lineLimit(2)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        .padding(.bottom, 2)
+                }
+                
+                if let url = metadata.url, let host = url.host {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        Text(host)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.black.opacity(0.8), Color.black.opacity(0.3)]),
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+            )
+            .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
+        }
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 3)
+    }
+}
+
+// Extension to apply corner radius to specific corners
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCornerShape(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCornerShape: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+// MARK: - Link Preview ViewModel
+class LinkPreviewViewModel: ObservableObject {
+    @Published var metadata: LPLinkMetadata?
+    @Published var isLoading = false
+    @Published var error: Error?
+    @Published var additionalMetadata: [String: String] = [:]
+    
+    func fetchMetadata(for urlString: String) {
+        // Reset state
+        metadata = nil
+        error = nil
+        additionalMetadata = [:]
+        
+        // Check if the string is a valid URL
+        guard let url = URL(string: urlString) else {
+            return
+        }
+        
+        isLoading = true
+        
+        // Extract basic URL information
+        if let host = url.host {
+            additionalMetadata["Domain"] = host
+        }
+        
+        additionalMetadata["Protocol"] = url.scheme ?? "Unknown"
+        
+        let provider = LPMetadataProvider()
+        provider.startFetchingMetadata(for: url) { [weak self] metadata, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                
+                if let error = error {
+                    self?.error = error
+                    print("Error fetching metadata: \(error.localizedDescription)")
+                } else if let metadata = metadata {
+                    self?.metadata = metadata
+                    
+                    // Extract additional metadata
+                    if let title = metadata.title {
+                        self?.additionalMetadata["Title"] = title
+                    }
+                }
+            }
+        }
+    }
+    
+    private func getDomainTypeDescription(for tld: String) -> String {
+        switch tld.lowercased() {
+        case "com":
+            return "Commercial website"
+        case "org":
+            return "Organization (typically non-profit)"
+        case "net":
+            return "Network service provider"
+        case "edu":
+            return "Educational institution"
+        case "gov":
+            return "Government entity"
+        case "mil":
+            return "Military organization"
+        case "io":
+            return "Technology/startup company"
+        case "co":
+            return "Company or commercial entity"
+        case "app":
+            return "Application-related website"
+        case "dev":
+            return "Developer-focused website"
+        case "ai":
+            return "Artificial Intelligence related"
+        default:
+            // Check if it's a country code
+            if tld.count == 2 {
+                return "Country-specific domain (.\(tld))"
+            }
+            return "Domain extension (.\(tld))"
+        }
+    }
+}
+
+// MARK: - Rich Link Preview Component
+struct RichLinkPreview: View {
+    let urlString: String
+    @StateObject private var viewModel = LinkPreviewViewModel()
+    @State private var isLink = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if viewModel.isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                    Spacer()
+                }
+                .frame(height: 100)
+            } else if let metadata = viewModel.metadata, isLink {
+                // Enhanced link preview with overlapping title
+                EnhancedLinkPreviewView(metadata: metadata)
+                    .frame(height: 150) // Slightly taller for better visibility
+            } else {
+                // Fallback for non-link content or failed preview
+                HStack {
+                    Image(systemName: "link.badge.xmark")
+                        .font(.largeTitle)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Not a valid web link")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 100)
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+        }
+        .onAppear {
+            isLink = isValidLink(urlString)
+            if isLink {
+                viewModel.fetchMetadata(for: urlString)
+            }
+        }
+    }
+    
+    // Helper to check if the string is a valid link
+    private func isValidLink(_ string: String) -> Bool {
+        return URLDetectorUtility.shared.isValidWebLink(string)
     }
 }

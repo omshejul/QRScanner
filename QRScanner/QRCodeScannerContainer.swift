@@ -14,6 +14,7 @@ import CoreImage.CIFilterBuiltins
 import UIKit
 import Foundation
 
+
 struct QRCodeScannerContainer: View {
     @State private var scannedCode: String? = nil
     @State private var scannedType: AVMetadataObject.ObjectType? = nil
@@ -466,20 +467,21 @@ struct QRCodeScannerContainer: View {
             return
         }
         
-        // Use NSDataDetector for more advanced URL detection
-        do {
-            let detector = try NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-            let matches = detector.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
-            
-            if let match = matches.first, let url = match.url, UIApplication.shared.canOpenURL(url) {
-                // Only open HTTPS URLs automatically for security
-                if url.scheme?.lowercased() == "https" {
-                    UIApplication.shared.open(url)
-                    return
-                }
+        // Use URLDetectorUtility for more advanced URL detection
+        let urls = URLDetectorUtility.shared.extractURLs(from: text)
+        if let url = urls.first, UIApplication.shared.canOpenURL(url) {
+            // Only open HTTPS URLs automatically for security
+            if url.scheme?.lowercased() == "https" {
+                UIApplication.shared.open(url)
+                return
             }
-        } catch {
-            print("Error creating NSDataDetector: \(error)")
+        }
+        
+        // Try with formatted URL if it's a domain-like pattern
+        let formattedURL = URLDetectorUtility.shared.formatURLString(text)
+        if formattedURL != text, let url = URL(string: formattedURL), UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+            return
         }
         
         // Custom regex for URLs without scheme (add https:// prefix)
