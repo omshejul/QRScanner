@@ -12,6 +12,24 @@
     - `isInputInvalid()`: Checks if the input is valid for QR code generation.
     - `getPlaceholder()`: Provides placeholder text based on QR type.
 
+## AdvanceQRCodeView.swift
+
+- **Enum `AdvanceQRType`**: Defines advanced types of QR codes (e.g., UPI Payment).
+- **Struct `AdvanceQRCodeView`**:
+  - **Inputs**: `type` (AdvanceQRType), specific inputs for advanced QR code generation.
+  - **Outputs**: QR code image, error messages.
+  - **Functions**:
+    - Specialized QR code generation for UPI payments and other advanced formats.
+
+## BarcodeGeneratorView.swift
+
+- **Struct `BarcodeGeneratorView`**:
+  - **Inputs**: `type` (BarcodeType), content for barcode generation.
+  - **Outputs**: Generated barcode image, error messages.
+  - **Functions**:
+    - `getBarcodeIcon(for type: BarcodeType)`: Returns appropriate icon for barcode type.
+    - Barcode generation for various formats (Aztec, Code128, etc.).
+
 ## QRCodeScannerView.swift
 
 - **Struct `QRCodeScannerView`**:
@@ -99,7 +117,6 @@
     - `deleteScanHistoryItem(at offsets: IndexSet)`: Deletes a scan history item.
     - `deleteCreateHistoryItem(at offsets: IndexSet)`: Deletes a create history item.
 
-
 ## QRScannerApp.swift
 
 - **Struct `QRScannerApp`**:
@@ -110,6 +127,7 @@
 
 - **Extensions**:
   - `hideKeyboard()`: Hides the keyboard.
+  - Various utility functions for the application.
 
 ## TabBarView.swift
 
@@ -127,3 +145,4 @@
 - **Struct `SettingsView`**:
   - **Functions**:
     - `applyTheme()`: Applies the selected theme to the app.
+    - Settings management for the application.
