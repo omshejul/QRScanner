@@ -32,77 +32,77 @@ enum BarcodeType: String, CaseIterable {
         case .code39:
             return BarcodeMetadata(
                 example: "ABC-123",
-                usage: "Used in logistics, manufacturing, and military applications. Supports uppercase letters, numbers, and some special characters."
+                usage: "Used in logistics, manufacturing, and military applications. Accepts uppercase letters, numbers, and special characters like dash, dot, dollar sign, slash, plus, and percent."
             )
         case .code39Mod43:
             return BarcodeMetadata(
                 example: "CODE39",
-                usage: "Similar to Code 39, but with added check digit for better accuracy. Common in healthcare and defense industries."
+                usage: "Similar to Code 39, but with an added check digit for better accuracy. Common in healthcare and defense industries. Accepts uppercase letters, numbers, and special characters like dash, dot, dollar sign, slash, plus, and percent."
             )
         case .extendedCode39:
             return BarcodeMetadata(
                 example: "Code-39+",
-                usage: "Extended version supporting all 128 ASCII characters. Used in document management and inventory systems."
+                usage: "Extended version supporting all 128 ASCII characters. Used in document management and inventory systems. Accepts uppercase letters, numbers, and special characters like dash, dot, dollar sign, slash, plus, and percent."
             )
         case .code93:
             return BarcodeMetadata(
                 example: "CODE93",
-                usage: "More compact than Code 39, used in logistics and retail. Supports full ASCII character set."
+                usage: "More compact than Code 39, used in logistics and retail. Accepts uppercase letters, numbers, and various special characters."
             )
         case .code128:
             return BarcodeMetadata(
                 example: "ABC12345",
-                usage: "Versatile barcode for logistics and retail. Supports all ASCII characters and is very compact."
+                usage: "Versatile barcode for logistics and retail. Accepts all ASCII characters and is very compact."
             )
         case .upce:
             return BarcodeMetadata(
                 example: "01234565",
-                usage: "Compressed UPC code for small retail items. Used on small product packages where space is limited."
+                usage: "Compressed UPC code for small retail items. Used on small product packages where space is limited. Enter 8 digits."
             )
         case .ean8:
             return BarcodeMetadata(
                 example: "12345670",
-                usage: "Short-form retail barcode used worldwide on small products where EAN-13 won't fit."
+                usage: "Short-form retail barcode used worldwide on small products where EAN-13 won't fit. Enter 8 digits."
             )
         case .ean13:
             return BarcodeMetadata(
                 example: "1234567890128",
-                usage: "Standard retail barcode used worldwide for product identification."
+                usage: "Standard retail barcode used worldwide for product identification. Enter 13 digits."
             )
         case .isbn13:
             return BarcodeMetadata(
                 example: "9780123456789",
-                usage: "Used for book identification worldwide. Starts with 978 or 979."
+                usage: "Used for book identification worldwide. Starts with 978 or 979. Enter 13 digits."
             )
         case .issn13:
             return BarcodeMetadata(
                 example: "9771234567898",
-                usage: "Used for periodical publications. Starts with 977."
+                usage: "Used for periodical publications. Starts with 977. Enter 13 digits."
             )
         case .itf14:
             return BarcodeMetadata(
                 example: "12345678901231",
-                usage: "Used on packaging for shipping cartons. Based on Interleaved 2 of 5."
+                usage: "Used on packaging for shipping cartons. Based on Interleaved 2 of 5. Enter 14 digits."
             )
         case .interleaved2of5:
             return BarcodeMetadata(
                 example: "1234567890",
-                usage: "Used in industrial and warehouse applications. Must contain an even number of digits."
+                usage: "Used in industrial and warehouse applications. Enter an even number of digits."
             )
         case .pdf417:
             return BarcodeMetadata(
                 example: "PDF417TEST",
-                usage: "2D barcode used on ID cards, shipping labels, and tickets. Can store up to 1.1 kilobytes."
+                usage: "2D barcode used on ID cards, shipping labels, and tickets. Can store up to 1.1 kilobytes of data."
             )
         case .aztec:
             return BarcodeMetadata(
                 example: "AZTEC2D",
-                usage: "2D barcode used in transport tickets and airline boarding passes. Reads well even if poorly printed."
+                usage: "2D barcode used in transport tickets and airline boarding passes. Reads well even if poorly printed or damaged."
             )
         case .dataMatrix:
             return BarcodeMetadata(
                 example: "DM2D123",
-                usage: "2D barcode used in industrial marking and packaging. Ideal for small items and can encode a large amount of data."
+                usage: "2D barcode used in industrial marking and packaging. Ideal for small items and can encode a large amount of data in a compact space."
             )
         // case .codabar:
         //     return BarcodeMetadata(
@@ -330,15 +330,7 @@ struct SocialQRCodeView: View {
                         }
                     }
                 }
-                Button(action: generateQRCode) {
-                    Text("Generate QR Code")
-                        .bold()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
+                GenerateSocialQRButton(action: generateQRCode)
                 .padding(.vertical)
 
                 Spacer()
@@ -389,6 +381,8 @@ struct SocialQRCodeView: View {
     }
 }
 
+
+
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
 
@@ -429,10 +423,18 @@ func saveToCreateHistory(_ createdText: String) {
     ]
     
     var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
-    if !history.contains(where: { ($0["text"] as? String) == createdText }) {
+    
+    // Check if item already exists in history
+    if let existingIndex = history.firstIndex(where: { ($0["text"] as? String) == createdText }) {
+        // Replace the existing item with the new one
+        history[existingIndex] = createItem
+    } else {
+        // Add as a new item
         history.append(createItem)
-        UserDefaults.standard.setValue(history, forKey: "createHistory")
     }
+    
+    // Save the updated history
+    UserDefaults.standard.setValue(history, forKey: "createHistory")
 }
 
 // MARK: - Helper Function to Get Barcode Icons

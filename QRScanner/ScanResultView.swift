@@ -30,7 +30,7 @@ struct ScanResultView: View {
             VStack(spacing: 20) {
                 // Display the barcode/QR code image
                 if barcodeType == .qr {
-                    generateQRCode(from: scannedText, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark)
+                    generateQRCode(from: scannedText, isDarkMode: getCurrentThemeMode())
                         .resizable()
                         .interpolation(.none)
                         .scaledToFit()

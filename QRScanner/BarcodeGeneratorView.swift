@@ -132,20 +132,7 @@ struct BarcodeGeneratorView: View {
                 }
 
                 // Generate Button
-                Button(action: generateBarcode) {
-                    HStack {
-                        Image(systemName: "barcode.viewfinder")
-                        Text("Generate Barcode")
-                            .bold()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(content.isEmpty ? Color.gray : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .disabled(content.isEmpty)
-                .padding(.horizontal)
+                GenerateBarcodeButton(action: generateBarcode, isDisabled: content.isEmpty)
 
                 Spacer()
             }
@@ -171,8 +158,6 @@ struct BarcodeGeneratorView: View {
             return "Enter 14 digits"
         case .interleaved2of5:
             return "Enter an even number of digits"
-//        case .codabar:
-//            return "Enter digits and A-D for start/stop characters"
         default:
             return "Enter content to generate barcode"
         }
@@ -322,12 +307,23 @@ struct BarcodeGeneratorView: View {
         ]
 
         var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
-        if !history.contains(where: { ($0["text"] as? String) == content }) {
+        
+        // Check if item already exists in history
+        if let existingIndex = history.firstIndex(where: { ($0["text"] as? String) == content }) {
+            // Replace the existing item with the new one
+            history[existingIndex] = createItem
+        } else {
+            // Add as a new item
             history.append(createItem)
-            UserDefaults.standard.setValue(history, forKey: "createHistory")
         }
+        
+        // Save the updated history
+        UserDefaults.standard.setValue(history, forKey: "createHistory")
     }
 }
+
+
+
 // MARK: - Helper Function to Get Barcode Icons
 private func getBarcodeIcon(for type: BarcodeType) -> String {
     switch type {

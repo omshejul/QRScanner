@@ -734,7 +734,6 @@ private struct CameraLensSelector: View {
                         camera: camera,
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
                         action: { 
-                            Haptic.soft()
                             onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
@@ -745,7 +744,6 @@ private struct CameraLensSelector: View {
                         camera: camera,
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
                         action: { 
-                            Haptic.soft()
                             onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
@@ -782,7 +780,10 @@ private struct BottomControls: View {
     var body: some View {
         HStack(spacing: 20) {
             // Photo Library Button
-            Button(action: onPhotoSelect) {
+            Button(action: {
+                Haptic.medium()
+                onPhotoSelect()
+            }) {
                 Image(systemName: "photo.on.rectangle")
                     .font(.system(size: 24))
                     .foregroundColor(.secondary)

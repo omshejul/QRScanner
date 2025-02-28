@@ -255,34 +255,80 @@ struct HistoryView: View {
 
     // MARK: - Load History from UserDefaults
     private func loadHistory() {
+        print("Loading history...")
+        
         // Load scan history with type information
         if let savedHistory = UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]]
         {
+            print("Found \(savedHistory.count) scan history items")
             scanHistory = savedHistory.compactMap { item in
                 guard let text = item["text"] as? String,
                     let typeString = item["type"] as? String,
                     let timestamp = item["timestamp"] as? Date
                 else {
+                    print("Invalid scan history item: \(item)")
                     return nil
                 }
                 return ScanHistoryItem(
                     text: text, type: AVMetadataObject.ObjectType(rawValue: typeString),
                     timestamp: timestamp)
             }
+            print("Loaded \(scanHistory.count) scan history items")
+        } else {
+            print("No scan history found")
         }
 
         // Load create history with timestamps and display type
         if let savedCreateHistory = UserDefaults.standard.array(forKey: "createHistory")
             as? [[String: Any]]
         {
+            print("Found \(savedCreateHistory.count) create history items")
             createHistory = savedCreateHistory.compactMap { item in
+                print("Processing item: \(item)")
                 guard let text = item["text"] as? String,
                     let typeString = item["type"] as? String,
-                    let timestamp = item["timestamp"] as? Date,
-                    let displayType = item["displayType"] as? String
+                    let timestamp = item["timestamp"] as? Date
                 else {
+                    print("Invalid create history item: \(item)")
                     return nil
                 }
+                
+                // Handle case where displayType might be missing (for older entries)
+                let displayType: String
+                if let savedDisplayType = item["displayType"] as? String {
+                    displayType = savedDisplayType
+                } else {
+                    // Determine display type from content
+                    if text.starts(with: "WIFI:") {
+                        displayType = "WiFi"
+                    } else if text.starts(with: "http") {
+                        displayType = "Web URL"
+                    } else if text.starts(with: "MATMSG:") {
+                        displayType = "Email"
+                    } else if text.starts(with: "SMSTO:") {
+                        displayType = "SMS"
+                    } else if text.starts(with: "TEL:") {
+                        displayType = "Phone"
+                    } else if text.starts(with: "BEGIN:VCARD") {
+                        displayType = "Contact"
+                    } else if text.starts(with: "geo:") {
+                        displayType = "Location"
+                    } else {
+                        displayType = "QR Code"
+                    }
+                    
+                    // Update the item in UserDefaults with the display type
+                    var updatedItem = item
+                    updatedItem["displayType"] = displayType
+                    
+                    // Find and update the item in the array
+                    if let index = savedCreateHistory.firstIndex(where: { ($0["text"] as? String) == text }) {
+                        var updatedHistory = savedCreateHistory
+                        updatedHistory[index] = updatedItem
+                        UserDefaults.standard.setValue(updatedHistory, forKey: "createHistory")
+                    }
+                }
+                
                 return CreateHistoryItem(
                     text: text,
                     type: AVMetadataObject.ObjectType(rawValue: typeString),
@@ -290,6 +336,9 @@ struct HistoryView: View {
                     displayType: displayType
                 )
             }
+            print("Loaded \(createHistory.count) create history items")
+        } else {
+            print("No create history found")
         }
     }
 

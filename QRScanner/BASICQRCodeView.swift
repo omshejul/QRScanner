@@ -330,6 +330,8 @@ struct BASICQRCodeView: View {
         hideKeyboard()
         errorMessage = nil
         let qrString = generateQRString()
+        
+        print("Generated QR String: \(qrString)")
 
         guard !qrString.isEmpty else {
             errorMessage = "Invalid input. Please check your values."
@@ -338,6 +340,7 @@ struct BASICQRCodeView: View {
 
         if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
             qrImage = image
+            print("Saving to history: \(qrString)")
             saveToCreateHistory(qrString)
         }
     }
@@ -470,17 +473,52 @@ struct BASICQRCodeView: View {
 
     // MARK: - Save to Create History
     func saveToCreateHistory(_ createdText: String) {
+        let displayType: String
+        if createdText.starts(with: "WIFI:") {
+            displayType = "WiFi"
+        } else if createdText.starts(with: "http") {
+            displayType = "Web URL"
+        } else if createdText.starts(with: "MATMSG:") {
+            displayType = "Email"
+            print("Detected Email QR Code")
+        } else if createdText.starts(with: "SMSTO:") {
+            displayType = "SMS"
+        } else if createdText.starts(with: "TEL:") {
+            displayType = "Phone"
+        } else if createdText.starts(with: "BEGIN:VCARD") {
+            displayType = "Contact"
+        } else if createdText.starts(with: "geo:") {
+            displayType = "Location"
+        } else {
+            displayType = "QR Code"
+        }
+        
         let createItem: [String: Any] = [
             "text": createdText,
             "type": AVMetadataObject.ObjectType.qr.rawValue,
+            "displayType": displayType,
             "timestamp": Date()
         ]
         
+        print("History item to save: \(createItem)")
+        
         var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
-        if !history.contains(where: { ($0["text"] as? String) == createdText }) {
+        print("Current history count: \(history.count)")
+        
+        // Check if item already exists in history
+        if let existingIndex = history.firstIndex(where: { ($0["text"] as? String) == createdText }) {
+            // Replace the existing item with the new one
+            history[existingIndex] = createItem
+            print("Replaced existing item in history")
+        } else {
+            // Add as a new item
             history.append(createItem)
-            UserDefaults.standard.setValue(history, forKey: "createHistory")
+            print("Added new item to history")
         }
+        
+        // Save the updated history
+        UserDefaults.standard.setValue(history, forKey: "createHistory")
+        print("Saved to history. New count: \(history.count)")
     }
 }
 
@@ -572,23 +610,7 @@ struct QRCodeImageView: View {
     }
 }
 
-struct GenerateQRButton: View {
-    let action: () -> Void
-    let isDisabled: Bool
 
-    var body: some View {
-        Button(action: action) {
-            Text("Generate QR Code")
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(isDisabled ? Color.gray : Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-        }
-        .padding(.horizontal)
-        .disabled(isDisabled)
-    }
-}
 
 // Extension to help with optional strings
 extension String {
