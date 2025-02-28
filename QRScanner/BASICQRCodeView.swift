@@ -822,7 +822,7 @@ struct LocationMapView: View {
     @Binding var longitude: String
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        span: MKCoordinateSpan(latitudeDelta: 180, longitudeDelta: 360)
     )
     @State private var selectedLocation: CLLocationCoordinate2D?
     @State private var annotations: [MapPin] = []
@@ -906,8 +906,6 @@ struct LocationMapView: View {
                 }
             }
             .onAppear {
-                // Only set up the initial map view without requesting location
-                
                 // If coordinates are already entered, center the map there
                 if let lat = Double(latitude), let lon = Double(longitude),
                    (-90...90).contains(lat), (-180...180).contains(lon) {
@@ -920,10 +918,10 @@ struct LocationMapView: View {
                     // Set initial annotation
                     annotations = [MapPin(coordinate: coordinate)]
                 } else {
-                    // Set a default region (could be a major city or country center)
+                    // Set a world view with maximum zoom out
                     region = MKCoordinateRegion(
-                        center: CLLocationCoordinate2D(latitude: 20.0, longitude: 0.0),
-                        span: MKCoordinateSpan(latitudeDelta: 5.0, longitudeDelta: 5.0)
+                        center: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+                        span: MKCoordinateSpan(latitudeDelta: 180, longitudeDelta: 360)
                     )
                 }
             }
