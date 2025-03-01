@@ -120,6 +120,53 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
+// MARK: - Selected Location Info View
+struct LocationInfoView: View {
+    let location: CLLocationCoordinate2D
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Image(systemName: "mappin.circle.fill")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 22))
+                Text("Selected Location")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+            }
+            HStack {
+            VStack {
+                Text("Latitude:")
+                    .foregroundColor(.primary)
+                    .font(.headline)
+                Text(String(format: "%.6f", location.latitude))
+                    .font(.system(.subheadline, design: .monospaced))
+                    .fontWeight(.medium)
+            }
+            
+            VStack {
+                Text("Longitude:")
+                    .foregroundColor(.primary)
+                    .font(.headline)
+                Text(String(format: "%.6f", location.longitude))
+                    .font(.system(.subheadline, design: .monospaced))
+                    .fontWeight(.medium)
+            }
+            }
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        // No bottom padding
+        .padding([.top, .leading, .trailing])
+    }
+}
+
 // MARK: - Map View
 struct LocationMapView: View {
     @StateObject private var locationManager = LocationManager()
@@ -137,69 +184,61 @@ struct LocationMapView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            ZStack {
                 if locationManager.isLoading {
                     ProgressView("Getting your location...")
                         .padding()
                 } else {
-                    // Use a custom map view that can handle taps properly
-                    TappableMapView(
-                        region: $region,
-                        selectedLocation: $selectedLocation,
-                        annotations: $annotations,
-                        showUserLocation: showUserLocation
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    
-                    if let selectedLocation = selectedLocation {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Selected Location:")
-                                .font(.headline)
-                            Text("Latitude: \(String(format: "%.6f", selectedLocation.latitude))")
-                            Text("Longitude: \(String(format: "%.6f", selectedLocation.longitude))")
+                    VStack {
+                        // Use a custom map view that can handle taps properly
+                        TappableMapView(
+                            region: $region,
+                            selectedLocation: $selectedLocation,
+                            annotations: $annotations,
+                            showUserLocation: showUserLocation
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        // Show location info if a location is selected
+                        selectedLocationView
+                        
+                        HStack {
+                            Button(action: {
+                                // Enable showing user location on map
+                                showUserLocation = true
+                                hasRequestedLocation = true
+                                
+                                // Request location
+                                locationManager.requestLocation()
+                            }) {
+                                Label("My Location", systemImage: "location.fill")
+                                    .padding()
+                                    .background(Color.blue.opacity(0.1))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(10)
+                            }
+                            .disabled(locationManager.isLoading)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                if let location = selectedLocation {
+                                    latitude = String(format: "%.6f", location.latitude)
+                                    longitude = String(format: "%.6f", location.longitude)
+                                    dismiss()
+                                }
+                            }) {
+                                Label("Use This Location", systemImage: "checkmark.circle.fill")
+                                    .padding()
+                                    .background(Color.green.opacity(0.1))
+                                    .foregroundColor(.green)
+                                    .cornerRadius(10)
+                            }
+                            .disabled(selectedLocation == nil)
                         }
                         .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(10)
-                        .padding(.horizontal)
                     }
                 }
-                
-                HStack {
-                    Button(action: {
-                        // Enable showing user location on map
-                        showUserLocation = true
-                        hasRequestedLocation = true
-                        
-                        // Request location
-                        locationManager.requestLocation()
-                    }) {
-                        Label("My Location", systemImage: "location.fill")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .disabled(locationManager.isLoading)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        if let location = selectedLocation {
-                            latitude = String(format: "%.6f", location.latitude)
-                            longitude = String(format: "%.6f", location.longitude)
-                            dismiss()
-                        }
-                    }) {
-                        Label("Use This Location", systemImage: "checkmark.circle.fill")
-                            .padding()
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .disabled(selectedLocation == nil)
-                }
-                .padding()
             }
             .navigationTitle("Select Location")
             .navigationBarTitleDisplayMode(.inline)
@@ -252,6 +291,14 @@ struct LocationMapView: View {
             }
         }
     }
+    
+    // Extracted view for selected location info
+    @ViewBuilder
+    private var selectedLocationView: some View {
+        if let location = selectedLocation {
+            LocationInfoView(location: location)
+        }
+    }
 }
 
 // Custom pin for map annotations
@@ -290,7 +337,7 @@ struct TappableMapView: UIViewRepresentable {
         
         // Check if we need to update the region (significant change in center or first load)
         let centerChanged = abs(currentRegion.center.latitude - newRegion.center.latitude) > 0.01 ||
-                           abs(currentRegion.center.longitude - newRegion.center.longitude) > 0.01
+        abs(currentRegion.center.longitude - newRegion.center.longitude) > 0.01
         
         if centerChanged {
             // Preserve the current zoom level (span) if possible
