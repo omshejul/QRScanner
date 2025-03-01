@@ -7,11 +7,26 @@
 
 import SwiftUI
 
+// MARK: - Generate QR Code Button
+struct GenerateQRButton: View {
+    let action: () -> Void
+    let isDisabled: Bool
+    
+    var body: some View {
+        AppButton(
+            action: action,
+            title: "Generate QR Code",
+            icon: "qrcode.viewfinder",
+            isDisabled: isDisabled
+        )
+    }
+}
+
 // MARK: - Generate Barcode Button
 struct GenerateBarcodeButton: View {
     let action: () -> Void
     let isDisabled: Bool
-
+    
     var body: some View {
         AppButton(
             action: action,
@@ -19,21 +34,6 @@ struct GenerateBarcodeButton: View {
             icon: "barcode.viewfinder",
             isDisabled: isDisabled,
             cornerRadius: 12
-        )
-    }
-}
-
-// MARK: - Generate QR Code Button
-struct GenerateQRButton: View {
-    let action: () -> Void
-    let isDisabled: Bool
-
-    var body: some View {
-        AppButton(
-            action: action,
-            title: "Generate QR Code",
-            icon: "qrcode.viewfinder",
-            isDisabled: isDisabled
         )
     }
 }
@@ -281,7 +281,7 @@ struct AppButton: View {
                     .stroke(style.hasBorder ? (isDisabled ? Color.gray : style.borderColor) : Color.clear, lineWidth: 1.5)
             )
             .shadow(color: (style == .plain || style == .outline || isDisabled) ? Color.clear : Color.black.opacity(0.1), 
-                   radius: 2, x: 0, y: 1)
+                    radius: 2, x: 0, y: 1)
         }
         .buttonStyle(EnhancedButtonStyle(isAnimating: $isAnimating))
         .disabled(isDisabled || isLoading)
@@ -318,9 +318,9 @@ struct EnhancedButtonStyle: ButtonStyle {
             .brightness(configuration.isPressed || isAnimating ? -0.05 : 0)
             .rotationEffect(Angle(degrees: configuration.isPressed || isAnimating ? -0.2 : 0))
             .shadow(color: Color.black.opacity(configuration.isPressed || isAnimating ? 0.1 : 0.2), 
-                   radius: configuration.isPressed || isAnimating ? 1 : 3, 
-                   x: 0, 
-                   y: configuration.isPressed || isAnimating ? 1 : 2)
+                    radius: configuration.isPressed || isAnimating ? 1 : 3, 
+                    x: 0, 
+                    y: configuration.isPressed || isAnimating ? 1 : 2)
             .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed || isAnimating)
     }
 }
