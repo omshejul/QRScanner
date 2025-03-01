@@ -399,6 +399,29 @@ struct ActionButtonsView: View {
                         Divider()
                     }
                 }
+                
+                // Plain text handling - Add search option for text content
+                // Only show this for plain text that doesn't match other formats
+                if barcodeType == .qr && 
+                   !scannedText.lowercased().starts(with: "http") &&
+                   !scannedText.lowercased().starts(with: "geo:") &&
+                   !scannedText.lowercased().starts(with: "mailto:") &&
+                   !scannedText.lowercased().starts(with: "matmsg:") &&
+                   !scannedText.lowercased().starts(with: "tel:") &&
+                   !scannedText.lowercased().starts(with: "smsto:") &&
+                   !scannedText.lowercased().starts(with: "upi://") &&
+                   !scannedText.lowercased().contains("wifi:") &&
+                   !scannedText.lowercased().contains("begin:vcard") {
+                    
+                    // Search in Safari
+                    ActionButton(icon: "safari", text: "Search in Safari") {
+                        if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                           let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Divider()
+                }
 
                 if scannedText.lowercased().starts(with: "upi://pay") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
