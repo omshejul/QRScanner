@@ -347,7 +347,7 @@ struct SocialQRCodeView: View {
         hideKeyboard()
         let fullURL = templateURL + username
         
-        if let image = generateQRCodeImage(from: fullURL, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+        if let image = generateQRCodeImage(from: fullURL, isDarkMode: getCurrentThemeMode()) {
             generatedQRCode = image
             isQRReady = true // ✅ QR is ready for sharing
             saveToCreateHistory(fullURL)
@@ -358,7 +358,7 @@ struct SocialQRCodeView: View {
     func generateQRCodeAndShare() {
         isQRReady = false
         DispatchQueue.global(qos: .userInitiated).async {
-            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: getCurrentThemeMode()) {
                 let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
                 try? image.pngData()?.write(to: tempURL)
                 

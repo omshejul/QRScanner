@@ -94,7 +94,7 @@ struct AdvanceQRCodeView: View {
             return
         }
         
-        if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+        if let image = generateQRCodeImage(from: qrString, isDarkMode: getCurrentThemeMode()) {
             qrImage = image
             saveToCreateHistory(qrString)
         }
@@ -106,14 +106,12 @@ struct AdvanceQRCodeView: View {
         
         DispatchQueue.main.async {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first else {
+                  let _ = windowScene.windows.first else {
                 isGeneratingQR = false
                 return
             }
             
-            let isDark = window.overrideUserInterfaceStyle == .unspecified ?
-            UIScreen.main.traitCollection.userInterfaceStyle == .dark :
-            window.overrideUserInterfaceStyle == .dark
+            let isDark = getCurrentThemeMode()
             
             DispatchQueue.global(qos: .userInitiated).async {
                 if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: isDark) {

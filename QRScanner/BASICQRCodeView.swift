@@ -392,7 +392,7 @@ struct BASICQRCodeView: View {
             return
         }
         
-        if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
+        if let image = generateQRCodeImage(from: qrString, isDarkMode: getCurrentThemeMode()) {
             qrImage = image
             print("Saving to history: \(qrString)")
             saveToCreateHistory(qrString)
@@ -406,18 +406,13 @@ struct BASICQRCodeView: View {
         
         DispatchQueue.main.async {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first else {
+                  let _ = windowScene.windows.first else {
                 isGeneratingQR = false
                 return
             }
             
-            // ✅ Correctly determine dark mode
-            let isDark: Bool
-            if window.overrideUserInterfaceStyle == .unspecified {
-                isDark = UIScreen.main.traitCollection.userInterfaceStyle == .dark
-            } else {
-                isDark = window.overrideUserInterfaceStyle == .dark
-            }
+            // Use getCurrentThemeMode() instead of manual calculation
+            let isDark = getCurrentThemeMode()
             
             DispatchQueue.global(qos: .userInitiated).async {
                 if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: isDark) {
