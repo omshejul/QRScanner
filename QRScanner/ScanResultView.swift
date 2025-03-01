@@ -185,7 +185,7 @@ struct ScanResultView: View {
             return "\(baseType) (Contact)"
         } else if text.starts(with: "tel:") {
             return "\(baseType) (Phone)"
-        } else if text.starts(with: "smsto:") {
+        } else if text.starts(with: "smsto:") || text.starts(with: "sms:") {
             return "\(baseType) (SMS)"
         } else if text.starts(with: "geo:") {
             return "\(baseType) (Location)"
@@ -361,6 +361,17 @@ struct ActionButtonsView: View {
                             UIApplication.shared.open(firstURL)
                         }
                         Divider()
+                        
+                        // Add a search option specifically for the extracted URL domain
+                        if let host = firstURL.host {
+                            ActionButton(icon: "magnifyingglass", text: "Search for more about \(host)") {
+                                if let encodedQuery = host.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                                   let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                            Divider()
+                        }
                     }
                 }
                 
@@ -402,6 +413,7 @@ struct ActionButtonsView: View {
                 
                 // Plain text handling - Add search option for text content
                 // Only show this for plain text that doesn't match other formats
+                // AND doesn't have extracted URLs
                 if barcodeType == .qr && 
                     !scannedText.lowercased().starts(with: "http") &&
                     !scannedText.lowercased().starts(with: "geo:") &&
@@ -409,9 +421,12 @@ struct ActionButtonsView: View {
                     !scannedText.lowercased().starts(with: "matmsg:") &&
                     !scannedText.lowercased().starts(with: "tel:") &&
                     !scannedText.lowercased().starts(with: "smsto:") &&
+                    !scannedText.lowercased().starts(with: "sms:") &&
                     !scannedText.lowercased().starts(with: "upi://") &&
                     !scannedText.lowercased().contains("wifi:") &&
-                    !scannedText.lowercased().contains("begin:vcard") {
+                    !scannedText.lowercased().contains("begin:vcard") &&
+                    extractedURLs.isEmpty && // Don't show search if we already have URLs
+                    !isURL { // Don't show search if the text itself is a URL
                     
                     // Search in Safari
                     ActionButton(icon: "safari", text: "Search in Safari") {
@@ -446,10 +461,36 @@ struct ActionButtonsView: View {
                     Divider()
                 }
                 
-                if scannedText.lowercased().starts(with: "smsto:") {
+                if scannedText.lowercased().starts(with: "smsto:") || scannedText.lowercased().starts(with: "sms:") {
                     ActionButton(icon: "message", text: "Send SMS") {
-                        if let url = URL(string: scannedText) {
+                        // Handle both SMSTO: and sms: formats
+                        let formattedSMS: String
+                        
+                        if scannedText.lowercased().starts(with: "smsto:") {
+                            // SMSTO:number:message format
+                            let content = scannedText.replacingOccurrences(of: "SMSTO:", with: "").replacingOccurrences(of: "smsto:", with: "")
+                            let components = content.components(separatedBy: ":")
+                            
+                            if components.count >= 2 {
+                                let phoneNumber = components[0]
+                                let message = components[1].addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                                formattedSMS = "sms:\(phoneNumber)?body=\(message)"
+                            } else {
+                                // Just the phone number
+                                formattedSMS = "sms:\(content)"
+                            }
+                        } else {
+                            // Already in sms: format
+                            formattedSMS = scannedText
+                        }
+                        
+                        if let url = URL(string: formattedSMS) {
                             UIApplication.shared.open(url)
+                        } else {
+                            // Fallback for compatibility
+                            if let url = URL(string: scannedText) {
+                                UIApplication.shared.open(url)
+                            }
                         }
                     }
                     Divider()

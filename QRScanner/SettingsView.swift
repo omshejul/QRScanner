@@ -109,7 +109,7 @@ struct SettingsView: View {
                 
                 // MARK: - About
                 Section(header: Text("About")) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("QR Scanner & Generator")
                             .font(.headline)
                         Text("Version 1.0.0")
@@ -134,18 +134,42 @@ struct SettingsView: View {
                     .foregroundStyle(.primary)
                     .accessibilityLabel("Visit Website")
                     .accessibilityHint("Opens the developer's website.")
-                    
-                    Link(destination: URL(string: "mailto:qr@omshejul.com")!) {
+
+                    Link(destination: URL(string: "mailto:qrbugreport@omshejul.com?subject=Bug%20Report")!) {
                         Label {
-                            Text("Email Me")
+                            Text("Report Bug")
                         } icon: {
-                            Image(systemName: "envelope.fill")
+                            Image(systemName: "ladybug")
                                 .foregroundStyle(.primary)
                         }
                     }
                     .foregroundStyle(.primary)
-                    .accessibilityLabel("Email Developer")
-                    .accessibilityHint("Opens the email client to contact the developer.")
+                    .accessibilityLabel("Report Bug")
+                    .accessibilityHint("Opens the email client to report a bug.")
+                    
+                    Link(destination: URL(string: "mailto:qrfeedback@omshejul.com?subject=Feedback")!) {
+                        Label {
+                            Text("Help & Feedback")
+                        } icon: {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                    .accessibilityLabel("Help and Feedback")
+                    .accessibilityHint("Opens the email client to send feedback.")
+
+                    // Link(destination: URL(string: "https://apps.apple.com/app/id123456789?action=write-review")!) {
+                    //     Label {
+                    //         Text("Write a Review")
+                    //     } icon: {
+                    //         Image(systemName: "star")
+                    //             .foregroundStyle(.primary)
+                    //     }
+                    // }
+                    // .foregroundStyle(.primary)
+                    // .accessibilityLabel("Write a Review")
+                    // .accessibilityHint("Opens the App Store to write a review.")
                 }
             }
             .navigationTitle("Settings")
