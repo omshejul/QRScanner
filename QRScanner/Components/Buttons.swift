@@ -232,20 +232,27 @@ struct AppButton: View {
                 Haptic.medium()
             }
             
+            // Start animation and show loading immediately
+            self.isAnimating = true
+            
             if showLoadingIndicator {
-                self.isAnimating = true
                 self.isLoading = true
+            }
+            
+            // Execute the action after a short delay (0.2 seconds)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                // Execute the action
+                action()
                 
-                // Delay resetting the animation state to allow full animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // Keep showing the loading state for a bit longer (total 0.4 seconds)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    // Reset animation state after action completes and loading time finishes
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         self.isAnimating = false
                         self.isLoading = false
                     }
                 }
             }
-            
-            action()
         }) {
             HStack(spacing: 8) {
                 if isLoading && showLoadingIndicator {
