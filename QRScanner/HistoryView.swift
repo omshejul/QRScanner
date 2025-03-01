@@ -42,99 +42,171 @@ struct CreateHistoryItem: Identifiable, Hashable {
 struct HistoryView: View {
     @State private var scanHistory: [ScanHistoryItem] = []
     @State private var createHistory: [CreateHistoryItem] = []
+    @State private var isScanHistoryExpanded: Bool = true
+    @State private var isCreateHistoryExpanded: Bool = true
     
     var body: some View {
         NavigationView {
             List {
                 // MARK: - Scan History Section
                 if !scanHistory.isEmpty {
-                    Section(header: Text("Scan History").font(.caption).foregroundColor(.gray)) {
-                        ForEach(scanHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
-                            NavigationLink(
-                                destination: ScanResultView(
-                                    scannedText: item.text, barcodeType: item.type
-                                ) {}
-                            ) {
-                                HStack {
-                                    if item.type == .aztec {
-                                        Image("aztec")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 20, height: 20)
-                                            .foregroundColor(.blue)
-                                    } else {
-                                        Image(systemName: getTypeIcon(for: item.type))
-                                            .foregroundColor(.blue)
-                                    }
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(item.text)
-                                            .lineLimit(1)
-                                            .truncationMode(.tail)
+                    Section {
+                        DisclosureGroup(
+                            isExpanded: $isScanHistoryExpanded,
+                            content: {
+                                ForEach(scanHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
+                                    NavigationLink(
+                                        destination: ScanResultView(
+                                            scannedText: item.text, barcodeType: item.type
+                                        ) {}
+                                    ) {
                                         HStack {
-                                            Text("\(getBarcodeTypeName(item.type)) • \(getRelativeTime(from: item.timestamp))")
+                                            if item.type == .aztec {
+                                                Image("aztec")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 20, height: 20)
+                                                    .foregroundColor(.blue)
+                                            } else {
+                                                Image(systemName: getTypeIcon(for: item.type))
+                                                    .foregroundColor(.blue)
+                                            }
+                                            
+                                            VStack(alignment: .leading) {
+                                                Text(item.text)
+                                                    .lineLimit(1)
+                                                    .truncationMode(.tail)
+                                                HStack {
+                                                    Text("\(getBarcodeTypeName(item.type)) • \(getRelativeTime(from: item.timestamp))")
+                                                }
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                            }
+                                            .padding(.vertical, 2)
                                         }
+                                    }
+                                }
+                                .onDelete(perform: deleteScanHistoryItem)
+                            },
+                            label: {
+                                HStack {
+                                    Image(systemName: "qrcode.viewfinder")
+                                        .foregroundColor(.blue)
+                                    Text("Scan History")
+                                        .font(.headline)
+                                    Spacer()
+                                    Text("\(scanHistory.count)")
                                         .font(.caption)
                                         .foregroundColor(.gray)
-                                    }
-                                    .padding(.vertical, 2)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 2)
+                                        .background(Color.gray.opacity(0.2))
+                                        .cornerRadius(10)
                                 }
                             }
-                        }
-                        .onDelete(perform: deleteScanHistoryItem)
+                        )
                     }
                 }
                 
                 // MARK: - Create History Section
                 if !createHistory.isEmpty {
-                    Section(header: Text("Create History").font(.caption).foregroundColor(.gray)) {
-                        ForEach(createHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
-                            NavigationLink(
-                                destination: ScanResultView(
-                                    scannedText: item.text, barcodeType: item.type
-                                ) {}
-                            ) {
-                                HStack {
-                                    if item.type == .aztec {
-                                        Image("aztec-green")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 20, height: 20)
-                                            .foregroundColor(.green)
-                                    } else {
-                                        Image(systemName: getTypeIcon(for: item.type))
-                                            .foregroundColor(.green)
-                                    }
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(item.text)
-                                            .lineLimit(1)
-                                            .truncationMode(.tail)
+                    Section {
+                        DisclosureGroup(
+                            isExpanded: $isCreateHistoryExpanded,
+                            content: {
+                                ForEach(createHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
+                                    NavigationLink(
+                                        destination: ScanResultView(
+                                            scannedText: item.text, barcodeType: item.type
+                                        ) {}
+                                    ) {
                                         HStack {
-                                            Text(item.displayType)
-                                            Text("•")
-                                            Text(getRelativeTime(from: item.timestamp))
+                                            if item.type == .aztec {
+                                                Image("aztec-green")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 20, height: 20)
+                                                    .foregroundColor(.green)
+                                            } else {
+                                                Image(systemName: getTypeIcon(for: item.type))
+                                                    .foregroundColor(.green)
+                                            }
+                                            
+                                            VStack(alignment: .leading) {
+                                                Text(item.text)
+                                                    .lineLimit(1)
+                                                    .truncationMode(.tail)
+                                                HStack {
+                                                    Text(item.displayType)
+                                                    Text("•")
+                                                    Text(getRelativeTime(from: item.timestamp))
+                                                }
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                            }
+                                            .padding(.vertical, 2)
                                         }
+                                    }
+                                }
+                                .onDelete(perform: deleteCreateHistoryItem)
+                            },
+                            label: {
+                                HStack {
+                                    Image(systemName: "plus.viewfinder")
+                                        .foregroundColor(.green)
+                                    Text("Create History")
+                                        .font(.headline)
+                                    Spacer()
+                                    Text("\(createHistory.count)")
                                         .font(.caption)
                                         .foregroundColor(.gray)
-                                    }
-                                    .padding(.vertical, 2)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 2)
+                                        .background(Color.gray.opacity(0.2))
+                                        .cornerRadius(10)
                                 }
                             }
-                        }
-                        .onDelete(perform: deleteCreateHistoryItem)
+                        )
                     }
                 }
                 
                 if scanHistory.isEmpty && createHistory.isEmpty {
-                    Text("No history yet")
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .listRowBackground(Color.clear)
+                    Section {
+                        VStack(spacing: 20) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+                            
+                            Text("No History Yet")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            Text("Scan or create QR codes to see them here")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    }
+                    .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("History")
             .onAppear(perform: loadHistory)
+            .toolbar {
+                if !scanHistory.isEmpty || !createHistory.isEmpty {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            // Toggle all sections
+                            isScanHistoryExpanded.toggle()
+                            isCreateHistoryExpanded.toggle()
+                        }) {
+                            Text(isScanHistoryExpanded && isCreateHistoryExpanded ? "Collapse All" : "Expand All")
+                        }
+                    }
+                }
+            }
         }
     }
     
