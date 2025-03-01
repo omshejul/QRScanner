@@ -104,11 +104,11 @@ enum BarcodeType: String, CaseIterable {
                 example: "DM2D123",
                 usage: "2D barcode used in industrial marking and packaging. Ideal for small items and can encode a large amount of data in a compact space."
             )
-        // case .codabar:
-        //     return BarcodeMetadata(
-        //         example: "A12345B",
-        //         usage: "Used in libraries, blood banks, and shipping. Requires start/stop characters (A-D)."
-        //     )
+            // case .codabar:
+            //     return BarcodeMetadata(
+            //         example: "A12345B",
+            //         usage: "Used in libraries, blood banks, and shipping. Requires start/stop characters (A-D)."
+            //     )
         }
     }
 }
@@ -139,7 +139,7 @@ struct QRCodeGeneratorView: View {
                         QRCodeOptionRow(icon: "person.crop.circle", title: "Contact")
                     }
                 }
-
+                
                 // MARK: - Barcode Section
                 Section(header: Text("ADVANCED").font(.caption).foregroundColor(.gray)) {
                     ForEach(BarcodeType.allCases.filter { $0 != .dataMatrix }, id: \.rawValue) { type in
@@ -155,7 +155,7 @@ struct QRCodeGeneratorView: View {
                             .frame(width: 25, height: 25)
                             .aspectRatio(contentMode: .fit)
                             .alignmentGuide(.firstTextBaseline) { d in d[.leading] }
-
+                        
                         Text("Data Matrix")
                             .foregroundColor(.gray)
                         Text("(Coming Soon)")
@@ -165,8 +165,8 @@ struct QRCodeGeneratorView: View {
                     }
                     .padding(.vertical, 4)
                 }
-
-
+                
+                
                 // MARK: - Social Section
                 Section(header: Text("SOCIAL").font(.caption).foregroundColor(.gray)) {
                     //icons phosphoricons.com
@@ -194,7 +194,7 @@ struct QRCodeGeneratorView: View {
                     NavigationLink(destination: SocialQRCodeView(platform: "Spotify", templateURL: "https://open.spotify.com/user/", inputPlaceholder: "Enter Spotify Username", exampleInput: "spotifyuser123")) {
                         QRCodeOptionRowSocial(imageName: "spotify", title: "Spotify")
                     }
-
+                    
                 }
             }
             .navigationTitle("Generator")
@@ -205,7 +205,7 @@ struct QRCodeGeneratorView: View {
 struct QRCodeOptionRowSocial: View {
     let imageName: String // Custom image name from assets
     let title: String
-
+    
     var body: some View {
         HStack {
             Image(imageName) // Loads from Assets
@@ -213,7 +213,7 @@ struct QRCodeOptionRowSocial: View {
                 .scaledToFit()
                 .frame(width: 20, height: 20) // Adjust logo size
                 .clipShape(RoundedRectangle(cornerRadius: 5)) // Optional styling
-
+            
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading) // Aligns text properly
         }
@@ -246,7 +246,7 @@ func getAdvancedIcon(for type: AdvanceQRType) -> String {
 struct QRCodeOptionRow: View {
     let icon: String
     let title: String
-
+    
     var body: some View {
         HStack {
             if title == "Aztec" {
@@ -281,7 +281,7 @@ struct SocialQRCodeView: View {
     @State private var qrShareURL: URL?
     @State private var isGeneratingQR = false
     @State private var isQRReady = false
-
+    
     var body: some View {
         ScrollView {
             VStack {
@@ -289,7 +289,7 @@ struct SocialQRCodeView: View {
                     .font(.title)
                     .bold()
                     .frame(maxWidth: .infinity, alignment: .leading)
-
+                
                 // ✅ Input Field with Placeholder & Example Text
                 VStack(alignment: .leading, spacing: 5) {
                     TextField(inputPlaceholder, text: $username)
@@ -308,7 +308,7 @@ struct SocialQRCodeView: View {
                         .font(.footnote)
                         .foregroundColor(.gray)
                 }
-
+                
                 if let qrImage = generatedQRCode {
                     Image(uiImage: qrImage)
                         .resizable()
@@ -316,7 +316,7 @@ struct SocialQRCodeView: View {
                         .scaledToFit()
                         .frame(width: 200, height: 200)
                         .padding()
-
+                    
                     // ✅ Share QR Button
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                         if !isGeneratingQR {
@@ -331,8 +331,8 @@ struct SocialQRCodeView: View {
                     }
                 }
                 GenerateSocialQRButton(action: generateQRCode)
-                .padding(.vertical)
-
+                    .padding(.vertical)
+                
                 Spacer()
             }
             .padding()
@@ -341,19 +341,19 @@ struct SocialQRCodeView: View {
             hideKeyboard()
         }
     }
-
+    
     // MARK: - Generate QR Code
     func generateQRCode() {
         hideKeyboard()
         let fullURL = templateURL + username
-
+        
         if let image = generateQRCodeImage(from: fullURL, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
             generatedQRCode = image
             isQRReady = true // ✅ QR is ready for sharing
             saveToCreateHistory(fullURL)
         }
     }
-
+    
     // MARK: - Generate QR Code & Save to File Before Sharing
     func generateQRCodeAndShare() {
         isQRReady = false
@@ -361,11 +361,11 @@ struct SocialQRCodeView: View {
             if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
                 let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
                 try? image.pngData()?.write(to: tempURL)
-
+                
                 DispatchQueue.main.async {
                     qrShareURL = tempURL
                     isSharingQR = true
-//                    isGeneratingQR = false
+                    //                    isGeneratingQR = false
                     isQRReady = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         isGeneratingQR = false
@@ -385,11 +385,11 @@ struct SocialQRCodeView: View {
 
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         return UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 // MARK: - Save to Create History
@@ -414,7 +414,7 @@ func saveToCreateHistory(_ createdText: String) {
     } else {
         displayType = "QR Code"
     }
-
+    
     let createItem: [String: Any] = [
         "text": createdText,
         "type": AVMetadataObject.ObjectType.qr.rawValue,
@@ -460,8 +460,8 @@ private func getBarcodeIcon(for type: BarcodeType) -> String {
         return "doc.text.fill"
     case .aztec:
         return ""  // Using custom asset in view
-//    case .codabar:
-//        return "creditcard.fill"
+        //    case .codabar:
+        //        return "creditcard.fill"
     case .dataMatrix:
         return "square.grid.2x2"
     }

@@ -69,7 +69,7 @@ struct SettingsView: View {
                             Label {
                                 Text("Theme")
                                     .foregroundColor(.primary)
-
+                                
                             } icon: {
                                 Image(systemName: "circle.lefthalf.filled")
                                     .foregroundColor(.primary)

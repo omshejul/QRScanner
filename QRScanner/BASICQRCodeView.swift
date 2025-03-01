@@ -40,19 +40,19 @@ struct BASICQRCodeView: View {
     @State private var showContactPicker = false
     @State private var contactPickerField: String? = nil
     @State private var showLocationPicker = false
-
+    
     let encryptionOptions = ["WPA", "WEP", "None"]
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 if type == .email {
                     ZStack(alignment: .trailingFirstTextBaseline) {
                         InputField(title: "Enter Recipient Email",
-                                info: "Enter the email address where the message will be sent.",
-                                text: $primaryInput,
-                                keyboardType: .emailAddress)
-
+                                   info: "Enter the email address where the message will be sent.",
+                                   text: $primaryInput,
+                                   keyboardType: .emailAddress)
+                        
                         Button(action: {
                             contactPickerField = "email"
                             showContactPicker = true
@@ -69,24 +69,24 @@ struct BASICQRCodeView: View {
                     InputField(title: "Enter Subject (Optional)",
                                info: "You can add a subject for the email.",
                                text: Binding(
-                                    get: { optionalFields["subject"] ?? "" },
-                                    set: { optionalFields["subject"] = $0 }
+                                get: { optionalFields["subject"] ?? "" },
+                                set: { optionalFields["subject"] = $0 }
                                ))
-
+                    
                     InputField(title: "Enter Body (Optional)",
                                info: "Write the content of the email.",
                                text: Binding(
-                                    get: { optionalFields["body"] ?? "" },
-                                    set: { optionalFields["body"] = $0 }
+                                get: { optionalFields["body"] ?? "" },
+                                set: { optionalFields["body"] = $0 }
                                ))
                 }
-
+                
                 else if type == .sms {
                     ZStack(alignment: .trailingFirstTextBaseline) {
                         InputField(title: "Enter Phone Number",
-                               info: "Enter the phone number to send the SMS message to.",
-                               text: $primaryInput,
-                               keyboardType: .phonePad)
+                                   info: "Enter the phone number to send the SMS message to.",
+                                   text: $primaryInput,
+                                   keyboardType: .phonePad)
                         
                         Button(action: {
                             contactPickerField = "phone"
@@ -100,24 +100,24 @@ struct BASICQRCodeView: View {
                         }
                         .padding(.trailing, 30)
                     }
-
+                    
                     InputField(title: "Enter Message (Optional)",
                                info: "",
                                text: Binding(
-                                    get: { optionalFields["message"] ?? "" },
-                                    set: { optionalFields["message"] = $0 }
+                                get: { optionalFields["message"] ?? "" },
+                                set: { optionalFields["message"] = $0 }
                                ))
                 }
-
+                
                 else if type == .wifi {
                     InputField(title: "Enter SSID",
                                info: "Enter network name as it appears in Wi-Fi setting.",
                                text: $primaryInput)
-
+                    
                     InputField(title: "Enter Wifi Password",
                                info: "Leave empty if it's an open network.",
                                text: $secondaryInput)
-
+                    
                     // Encryption Type Picker
                     Picker("Encryption Type", selection: $selectedEncryption) {
                         ForEach(encryptionOptions, id: \.self) { option in
@@ -132,12 +132,12 @@ struct BASICQRCodeView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
                         .padding(.horizontal)
-
+                    
                     // Hidden Network Toggle
                     Toggle("Hidden Network", isOn: $isHiddenNetwork)
                         .padding(.horizontal)
                 }
-
+                
                 else if type == .location {
                     VStack(spacing: 15) {
                         HStack {
@@ -154,14 +154,14 @@ struct BASICQRCodeView: View {
                                 .padding(.horizontal)
                             
                             InputField(title: "Enter Latitude",
-                                   info: "Must be between -90 and 90.",
-                                   text: $primaryInput,
-                                   keyboardType: .decimalPad)
-
+                                       info: "Must be between -90 and 90.",
+                                       text: $primaryInput,
+                                       keyboardType: .decimalPad)
+                            
                             InputField(title: "Enter Longitude",
-                                   info: "Must be between -180 and 180.",
-                                   text: $secondaryInput,
-                                   keyboardType: .decimalPad)
+                                       info: "Must be between -180 and 180.",
+                                       text: $secondaryInput,
+                                       keyboardType: .decimalPad)
                         }
                         
                         Divider()
@@ -198,7 +198,7 @@ struct BASICQRCodeView: View {
                         LocationMapView(latitude: $primaryInput, longitude: $secondaryInput)
                     }
                 }
-
+                
                 else if type == .contact {
                     VStack {
                         HStack {
@@ -242,9 +242,9 @@ struct BASICQRCodeView: View {
                 else if type == .phone {
                     ZStack(alignment: .trailingFirstTextBaseline) {
                         InputField(title: getPlaceholder(),
-                               info: "Enter the phone number with or without a country code",
-                               text: $primaryInput,
-                               keyboardType: .phonePad)
+                                   info: "Enter the phone number with or without a country code",
+                                   text: $primaryInput,
+                                   keyboardType: .phonePad)
                         
                         Button(action: {
                             contactPickerField = "phone"
@@ -259,25 +259,25 @@ struct BASICQRCodeView: View {
                         .padding(.trailing, 30)
                     }
                 }
-
+                
                 else {
                     InputField(title: getPlaceholder(),
                                info: "",
                                text: $primaryInput)
                 }
-
-
-
+                
+                
+                
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.footnote)
                 }
-
+                
                 if let qrImage = qrImage {
                     QRCodeImageView(qrImage: qrImage)
                     // Share QR Button
-                
+                    
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                         if !isGeneratingQR {
                             isGeneratingQR = true
@@ -290,25 +290,25 @@ struct BASICQRCodeView: View {
                         }
                     }
                 }
-
-                GenerateQRButton(action: generateQRCode, isDisabled: isInputInvalid())
-                .padding()
-
                 
-
+                GenerateQRButton(action: generateQRCode, isDisabled: isInputInvalid())
+                    .padding()
+                
+                
+                
                 Spacer()
             }
             .padding(4)
             .toolbar {
                 ToolbarItem(placement: .keyboard) {
- 
+                    
                     Button(action: { hideKeyboard() }) {
                         HStack() {
                             Text("Done")
                             Image(systemName: "keyboard.chevron.compact.down")
                         }
                     }
-
+                    
                     .padding(.horizontal)
                 }
             }
@@ -319,7 +319,7 @@ struct BASICQRCodeView: View {
             ContactPickerView(selectedField: contactPickerField ?? "", onContactSelected: handleContactSelection)
         }
     }
-
+    
     private func handleContactSelection(contact: CNContact) {
         switch contactPickerField {
         case "email":
@@ -379,19 +379,19 @@ struct BASICQRCodeView: View {
             break
         }
     }
-
+    
     private func generateQRCode() {
         hideKeyboard()
         errorMessage = nil
         let qrString = generateQRString()
         
         print("Generated QR String: \(qrString)")
-
+        
         guard !qrString.isEmpty else {
             errorMessage = "Invalid input. Please check your values."
             return
         }
-
+        
         if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
             qrImage = image
             print("Saving to history: \(qrString)")
@@ -403,14 +403,14 @@ struct BASICQRCodeView: View {
     func generateQRCodeAndShare() {
         isQRReady = false // ✅ Prevent sharing until ready
         isGeneratingQR = true // ✅ Ensure UI updates immediately
-
+        
         DispatchQueue.main.async {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                   let window = windowScene.windows.first else {
                 isGeneratingQR = false
                 return
             }
-
+            
             // ✅ Correctly determine dark mode
             let isDark: Bool
             if window.overrideUserInterfaceStyle == .unspecified {
@@ -418,12 +418,12 @@ struct BASICQRCodeView: View {
             } else {
                 isDark = window.overrideUserInterfaceStyle == .dark
             }
-
+            
             DispatchQueue.global(qos: .userInitiated).async {
                 if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: isDark) {
                     let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
                     try? image.pngData()?.write(to: tempURL) // ✅ Save image before sharing
-
+                    
                     DispatchQueue.main.async {
                         qrShareURL = tempURL
                         isSharingQR = true
@@ -441,8 +441,8 @@ struct BASICQRCodeView: View {
             }
         }
     }
-
-
+    
+    
     private func generateQRString() -> String {
         switch type {
         case .wifi:
@@ -466,10 +466,10 @@ struct BASICQRCodeView: View {
             return generateVCard()
         }
     }
-
+    
     private func generateVCard() -> String {
         var vCard = "BEGIN:VCARD\nVERSION:3.0\n"
-
+        
         if let name = optionalFields["name"], !name.isEmpty {
             vCard += "FN:\(name)\n"
         }
@@ -494,11 +494,11 @@ struct BASICQRCodeView: View {
         if let notes = optionalFields["notes"], !notes.isEmpty {
             vCard += "NOTE:\(notes)\n"
         }
-
+        
         vCard += "END:VCARD"
         return vCard
     }
-
+    
     private func isInputInvalid() -> Bool {
         switch type {
         case .wifi:
@@ -511,7 +511,7 @@ struct BASICQRCodeView: View {
             return optionalFields.values.allSatisfy { $0.isEmpty } // Requires at least 1 field
         }
     }
-
+    
     private func getPlaceholder() -> String {
         switch type {
         case .wifi: return "Enter SSID"
@@ -524,7 +524,7 @@ struct BASICQRCodeView: View {
         default: return ""
         }
     }
-
+    
     // MARK: - Save to Create History
     func saveToCreateHistory(_ createdText: String) {
         let displayType: String
@@ -606,7 +606,7 @@ struct InputField: View {
 // MARK: - Contact Fields
 struct ContactFields: View {
     @Binding var optionalFields: [String: String]
-
+    
     var body: some View {
         VStack {
             InputField(title: "Name (optional)", info: "", text: Binding(
@@ -649,7 +649,7 @@ struct ContactFields: View {
 struct QRCodeImageView: View {
     let qrImage: UIImage
     @State private var isSharing = false
-
+    
     var body: some View {
         VStack {
             Image(uiImage: qrImage)
@@ -658,11 +658,11 @@ struct QRCodeImageView: View {
                 .scaledToFit()
                 .frame(width: 200, height: 200)
                 .padding(10)
-
-            .padding(.horizontal)
-            .sheet(isPresented: $isSharing) {
-                ShareSheet(activityItems: [qrImage])
-            }
+            
+                .padding(.horizontal)
+                .sheet(isPresented: $isSharing) {
+                    ShareSheet(activityItems: [qrImage])
+                }
         }
     }
 }

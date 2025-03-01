@@ -11,24 +11,24 @@ struct TabBarView: View {
     init() {
         setupTabBarAppearance()
     }
-
+    
     var body: some View {
         TabView {
             QRCodeScannerContainer()
                 .tabItem {
                     Label("Scan", systemImage: "qrcode.viewfinder")
                 }
-
+            
             QRCodeGeneratorView()
                 .tabItem {
                     Label("Create", systemImage: "plus.app")
                 }
-
+            
             HistoryView()
                 .tabItem {
                     Label("History", systemImage: "clock.arrow.circlepath")
                 }
-
+            
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gear")

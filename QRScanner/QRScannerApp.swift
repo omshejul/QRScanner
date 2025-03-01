@@ -10,11 +10,11 @@ import SwiftUI
 @main
 struct QRScannerApp: App {
     @AppStorage("themeMode") private var themeMode = "Device" // Load stored theme
-
+    
     init() {
         applyTheme() // ✅ Apply theme immediately on launch
     }
-
+    
     var body: some Scene {
         WindowGroup {
             TabBarView()
@@ -23,7 +23,7 @@ struct QRScannerApp: App {
                 }
         }
     }
-
+    
     // MARK: - Apply Theme Based on Selection
     private func applyTheme() {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {

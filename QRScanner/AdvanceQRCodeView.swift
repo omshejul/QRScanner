@@ -23,35 +23,35 @@ struct AdvanceQRCodeView: View {
     @State private var isGeneratingQR = false
     @State private var isQRReady = false
     @State private var errorMessage: String?
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 if type == .upi {
                     InputField(title: "Enter UPI ID",
-                             info: "Enter your UPI ID (e.g., username@upi)",
-                             text: $vpa)
+                               info: "Enter your UPI ID (e.g., username@upi)",
+                               text: $vpa)
                     
                     InputField(title: "Enter Name",
-                             info: "Enter recipient's name",
-                             text: $name)
+                               info: "Enter recipient's name",
+                               text: $name)
                     
                     InputField(title: "Enter Amount (Optional)",
-                             info: "Leave empty for user to enter amount",
-                             text: $amount,
-                             keyboardType: .decimalPad)
+                               info: "Leave empty for user to enter amount",
+                               text: $amount,
+                               keyboardType: .decimalPad)
                     
                     InputField(title: "Enter Message (Optional)",
-                             info: "Add a note for the payment",
-                             text: $message)
+                               info: "Add a note for the payment",
+                               text: $message)
                 }
-
+                
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.footnote)
                 }
-
+                
                 if let qrImage = qrImage {
                     QRCodeImageView(qrImage: qrImage)
                     
@@ -67,10 +67,10 @@ struct AdvanceQRCodeView: View {
                         }
                     }
                 }
-
+                
                 GenerateQRButton(action: generateQRCode, isDisabled: isInputInvalid())
-                .padding()
-
+                    .padding()
+                
                 Spacer()
             }
             .padding(4)
@@ -83,17 +83,17 @@ struct AdvanceQRCodeView: View {
         .onTapGesture { hideKeyboard() }
         .navigationTitle(type.rawValue)
     }
-
+    
     private func generateQRCode() {
         hideKeyboard()
         errorMessage = nil
         let qrString = generateQRString()
-
+        
         guard !qrString.isEmpty else {
             errorMessage = "Invalid input. Please check your values."
             return
         }
-
+        
         if let image = generateQRCodeImage(from: qrString, isDarkMode: UITraitCollection.current.userInterfaceStyle == .dark) {
             qrImage = image
             saveToCreateHistory(qrString)
@@ -103,23 +103,23 @@ struct AdvanceQRCodeView: View {
     private func generateQRCodeAndShare() {
         isQRReady = false
         isGeneratingQR = true
-
+        
         DispatchQueue.main.async {
             guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                   let window = windowScene.windows.first else {
                 isGeneratingQR = false
                 return
             }
-
+            
             let isDark = window.overrideUserInterfaceStyle == .unspecified ?
-                UIScreen.main.traitCollection.userInterfaceStyle == .dark :
-                window.overrideUserInterfaceStyle == .dark
-
+            UIScreen.main.traitCollection.userInterfaceStyle == .dark :
+            window.overrideUserInterfaceStyle == .dark
+            
             DispatchQueue.global(qos: .userInitiated).async {
                 if let image = generateQRCodeImage(from: generateQRString(), isDarkMode: isDark) {
                     let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
                     try? image.pngData()?.write(to: tempURL)
-
+                    
                     DispatchQueue.main.async {
                         qrShareURL = tempURL
                         isSharingQR = true
@@ -137,7 +137,7 @@ struct AdvanceQRCodeView: View {
             }
         }
     }
-
+    
     private func generateQRString() -> String {
         switch type {
         case .upi:
@@ -156,7 +156,7 @@ struct AdvanceQRCodeView: View {
             return upiString
         }
     }
-
+    
     private func isInputInvalid() -> Bool {
         switch type {
         case .upi:

@@ -135,23 +135,23 @@ struct LocationInfoView: View {
                     .fontWeight(.semibold)
             }
             HStack {
-            VStack {
-                Text("Latitude:")
-                    .foregroundColor(.primary)
-                    .font(.headline)
-                Text(String(format: "%.6f", location.latitude))
-                    .font(.system(.subheadline, design: .monospaced))
-                    .fontWeight(.medium)
-            }
-            
-            VStack {
-                Text("Longitude:")
-                    .foregroundColor(.primary)
-                    .font(.headline)
-                Text(String(format: "%.6f", location.longitude))
-                    .font(.system(.subheadline, design: .monospaced))
-                    .fontWeight(.medium)
-            }
+                VStack {
+                    Text("Latitude:")
+                        .foregroundColor(.primary)
+                        .font(.headline)
+                    Text(String(format: "%.6f", location.latitude))
+                        .font(.system(.subheadline, design: .monospaced))
+                        .fontWeight(.medium)
+                }
+                
+                VStack {
+                    Text("Longitude:")
+                        .foregroundColor(.primary)
+                        .font(.headline)
+                    Text(String(format: "%.6f", location.longitude))
+                        .font(.system(.subheadline, design: .monospaced))
+                        .fontWeight(.medium)
+                }
             }
         }
         .padding()

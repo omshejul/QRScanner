@@ -13,11 +13,11 @@ struct ScanHistoryItem: Identifiable, Hashable {
     let text: String
     let type: AVMetadataObject.ObjectType
     let timestamp: Date
-
+    
     static func == (lhs: ScanHistoryItem, rhs: ScanHistoryItem) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -29,11 +29,11 @@ struct CreateHistoryItem: Identifiable, Hashable {
     let type: AVMetadataObject.ObjectType
     let timestamp: Date
     let displayType: String
-
+    
     static func == (lhs: CreateHistoryItem, rhs: CreateHistoryItem) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
@@ -42,7 +42,7 @@ struct CreateHistoryItem: Identifiable, Hashable {
 struct HistoryView: View {
     @State private var scanHistory: [ScanHistoryItem] = []
     @State private var createHistory: [CreateHistoryItem] = []
-
+    
     var body: some View {
         NavigationView {
             List {
@@ -66,7 +66,7 @@ struct HistoryView: View {
                                         Image(systemName: getTypeIcon(for: item.type))
                                             .foregroundColor(.blue)
                                     }
-
+                                    
                                     VStack(alignment: .leading) {
                                         Text(item.text)
                                             .lineLimit(1)
@@ -84,7 +84,7 @@ struct HistoryView: View {
                         .onDelete(perform: deleteScanHistoryItem)
                     }
                 }
-
+                
                 // MARK: - Create History Section
                 if !createHistory.isEmpty {
                     Section(header: Text("Create History").font(.caption).foregroundColor(.gray)) {
@@ -105,7 +105,7 @@ struct HistoryView: View {
                                         Image(systemName: getTypeIcon(for: item.type))
                                             .foregroundColor(.green)
                                     }
-
+                                    
                                     VStack(alignment: .leading) {
                                         Text(item.text)
                                             .lineLimit(1)
@@ -125,7 +125,7 @@ struct HistoryView: View {
                         .onDelete(perform: deleteCreateHistoryItem)
                     }
                 }
-
+                
                 if scanHistory.isEmpty && createHistory.isEmpty {
                     Text("No history yet")
                         .foregroundColor(.gray)
@@ -137,7 +137,7 @@ struct HistoryView: View {
             .onAppear(perform: loadHistory)
         }
     }
-
+    
     private func getIcon(for text: String) -> String {
         // First check for special content patterns
         if text.starts(with: "upi://pay") {
@@ -159,7 +159,7 @@ struct HistoryView: View {
         } else if text.lowercased().contains("mecard:") {
             return "person.text.rectangle"
         } else if text.lowercased().contains("market:")
-            || text.lowercased().contains("play.google.com")
+                    || text.lowercased().contains("play.google.com")
         {
             return "bag"
         } else if text.lowercased().contains("bitcoin:") {
@@ -167,7 +167,7 @@ struct HistoryView: View {
         } else if text.lowercased().contains("facetime:") {
             return "video"
         } else if text.lowercased().contains("calendar")
-            || text.lowercased().contains("BEGIN:VEVENT")
+                    || text.lowercased().contains("BEGIN:VEVENT")
         {
             return "calendar"
         } else if text.allSatisfy({ $0.isNumber }) {
@@ -192,7 +192,7 @@ struct HistoryView: View {
             return "qrcode"
         }
     }
-
+    
     private func getTypeIcon(for type: AVMetadataObject.ObjectType) -> String {
         switch type {
         case .qr:
@@ -221,7 +221,7 @@ struct HistoryView: View {
             return "barcode"
         }
     }
-
+    
     private func getBarcodeTypeName(_ type: AVMetadataObject.ObjectType) -> String {
         switch type {
         case .qr:
@@ -252,7 +252,7 @@ struct HistoryView: View {
             return "Barcode"
         }
     }
-
+    
     // MARK: - Load History from UserDefaults
     private func loadHistory() {
         print("Loading history...")
@@ -263,8 +263,8 @@ struct HistoryView: View {
             print("Found \(savedHistory.count) scan history items")
             scanHistory = savedHistory.compactMap { item in
                 guard let text = item["text"] as? String,
-                    let typeString = item["type"] as? String,
-                    let timestamp = item["timestamp"] as? Date
+                      let typeString = item["type"] as? String,
+                      let timestamp = item["timestamp"] as? Date
                 else {
                     print("Invalid scan history item: \(item)")
                     return nil
@@ -277,7 +277,7 @@ struct HistoryView: View {
         } else {
             print("No scan history found")
         }
-
+        
         // Load create history with timestamps and display type
         if let savedCreateHistory = UserDefaults.standard.array(forKey: "createHistory")
             as? [[String: Any]]
@@ -286,8 +286,8 @@ struct HistoryView: View {
             createHistory = savedCreateHistory.compactMap { item in
                 print("Processing item: \(item)")
                 guard let text = item["text"] as? String,
-                    let typeString = item["type"] as? String,
-                    let timestamp = item["timestamp"] as? Date
+                      let typeString = item["type"] as? String,
+                      let timestamp = item["timestamp"] as? Date
                 else {
                     print("Invalid create history item: \(item)")
                     return nil
@@ -341,18 +341,18 @@ struct HistoryView: View {
             print("No create history found")
         }
     }
-
+    
     // Helper function to format relative time
     private func getRelativeTime(from date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
     }
-
+    
     // MARK: - Delete History Items
     private func deleteScanHistoryItem(at offsets: IndexSet) {
         var savedHistory =
-            UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]] ?? []
+        UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]] ?? []
         offsets.forEach { index in
             if index < savedHistory.count {
                 savedHistory.remove(at: index)
@@ -361,10 +361,10 @@ struct HistoryView: View {
         UserDefaults.standard.setValue(savedHistory, forKey: "scanHistory")
         loadHistory()
     }
-
+    
     private func deleteCreateHistoryItem(at offsets: IndexSet) {
         var storedHistory =
-            UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
+        UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
         offsets.forEach { index in
             if index < storedHistory.count {
                 storedHistory.remove(at: index)

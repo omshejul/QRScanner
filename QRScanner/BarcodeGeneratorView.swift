@@ -10,7 +10,7 @@ struct BarcodeGeneratorView: View {
     @State private var barcodeShareURL: URL?
     @State private var isGenerating: Bool = false
     @State private var errorMessage: String?
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -32,9 +32,9 @@ struct BarcodeGeneratorView: View {
                             .font(.title2)
                             .bold()
                     }
-
+                    
                     Divider()
-
+                    
                     VStack(alignment: .leading, spacing: 8) {
                         Label {
                             Text(type.metadata.example)
@@ -44,7 +44,7 @@ struct BarcodeGeneratorView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
-
+                        
                         Label {
                             Text(type.metadata.usage)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -64,7 +64,7 @@ struct BarcodeGeneratorView: View {
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
                 .padding(.horizontal)
-
+                
                 // Input Section
                 VStack(alignment: .leading, spacing: 8) {
                     TextField("Enter content", text: $content)
@@ -87,20 +87,20 @@ struct BarcodeGeneratorView: View {
                                 }
                             }
                         }
-
+                    
                     Text(getInputHint())
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
                 .padding(.horizontal)
-
+                
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .foregroundColor(.red)
                         .font(.footnote)
                         .padding(.horizontal)
                 }
-
+                
                 // Generated Barcode Section
                 if let barcode = generatedBarcode {
                     VStack(spacing: 16) {
@@ -113,7 +113,7 @@ struct BarcodeGeneratorView: View {
                             .background(Color.white)
                             .cornerRadius(16)
                             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-
+                        
                         ActionButtonCenter(
                             icon: "square.and.arrow.up",
                             text: isGenerating ? "Please Wait..." : "Share Barcode"
@@ -130,11 +130,11 @@ struct BarcodeGeneratorView: View {
                         }
                     }
                 }
-
+                
                 // Generate Button
                 GenerateBarcodeButton(action: generateBarcode, isDisabled: content.isEmpty)
-                .padding()
-
+                    .padding()
+                
                 Spacer()
             }
             .padding(.vertical)
@@ -142,7 +142,7 @@ struct BarcodeGeneratorView: View {
         .onTapGesture { hideKeyboard() }
         .navigationTitle(type.rawValue)
     }
-
+    
     private func getInputHint() -> String {
         switch type {
         case .code39, .code39Mod43, .extendedCode39:
@@ -163,14 +163,14 @@ struct BarcodeGeneratorView: View {
             return "Enter content to generate barcode"
         }
     }
-
+    
     func generateBarcode() {
         hideKeyboard()
         errorMessage = nil
-
+        
         let generator = RSUnifiedCodeGenerator.shared
         let objectType = getBarcodeObjectType()
-
+        
         if let image = generator.generateCode(content, machineReadableCodeObjectType: objectType) {
             generatedBarcode = image
             saveToCreateHistory(content)
@@ -178,10 +178,10 @@ struct BarcodeGeneratorView: View {
             errorMessage = "Invalid content for \(type.rawValue)"
         }
     }
-
+    
     func generateBarcodeAndShare() {
         guard let originalImage = generatedBarcode else { return }
-
+        
         // Determine optimal size based on barcode type
         let size: CGSize
         switch type {
@@ -209,26 +209,26 @@ struct BarcodeGeneratorView: View {
         case .interleaved2of5:
             // Similar to ITF-14
             size = CGSize(width: 2560, height: 512)
-//        case .codabar:
+            //        case .codabar:
             // Standard width for Codabar
-//            size = CGSize(width: 2048, height: 512)
+            //            size = CGSize(width: 2048, height: 512)
         case .dataMatrix:
             // Data Matrix is typically square
             size = CGSize(width: 1024, height: 1024)
         }
-
+        
         // Create image context with white background
         UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
-
+        
         // Fill white background
         UIColor.white.setFill()
         UIRectFill(CGRect(origin: .zero, size: size))
-
+        
         // Calculate aspect ratio preserving rect
         let horizontalPadding: CGFloat = 64  // Add padding constant
         let originalAspect = originalImage.size.width / originalImage.size.height
         let targetAspect = (size.width - (2 * horizontalPadding)) / size.height
-
+        
         let drawRect: CGRect
         if originalAspect > targetAspect {
             // Image is wider than target - fit to padded width
@@ -243,22 +243,22 @@ struct BarcodeGeneratorView: View {
             let x = (size.width - width) / 2
             drawRect = CGRect(x: x, y: 0, width: width, height: height)
         }
-
+        
         // Draw the barcode scaled up with proper aspect ratio
         let context = UIGraphicsGetCurrentContext()
         context?.interpolationQuality = .none  // Disable interpolation for sharp edges
         context?.setShouldAntialias(false)  // Disable antialiasing for crisp lines
         originalImage.draw(in: drawRect)
-
+        
         // Get the high quality image
         let highQualityImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
-
+        
         guard let finalImage = highQualityImage else { return }
-
+        
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("Barcode.png")
         try? finalImage.pngData()?.write(to: tempURL)  // Save as PNG for lossless quality
-
+        
         DispatchQueue.main.async {
             barcodeShareURL = tempURL
             isSharingBarcode = true
@@ -267,7 +267,7 @@ struct BarcodeGeneratorView: View {
             }
         }
     }
-
+    
     private func getBarcodeObjectType() -> String {
         switch type {
         case .code39:
@@ -292,13 +292,13 @@ struct BarcodeGeneratorView: View {
             return AVMetadataObject.ObjectType.aztec.rawValue
         case .dataMatrix:
             return AVMetadataObject.ObjectType.dataMatrix.rawValue
-//        case .codabar:
-//            return AVMetadataObject.ObjectType.codabar.rawValue
+            //        case .codabar:
+            //            return AVMetadataObject.ObjectType.codabar.rawValue
         default:
             return AVMetadataObject.ObjectType.code128.rawValue
         }
     }
-
+    
     private func saveToCreateHistory(_ content: String) {
         let createItem: [String: Any] = [
             "text": content,
@@ -306,7 +306,7 @@ struct BarcodeGeneratorView: View {
             "displayType": type.rawValue,
             "timestamp": Date(),
         ]
-
+        
         var history = UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
         
         // Check if item already exists in history
@@ -350,7 +350,7 @@ private func getBarcodeIcon(for type: BarcodeType) -> String {
         return "doc.text.fill"
     case .dataMatrix:
         return "square.grid.2x2"
-//    case .codabar:
-//        return "creditcard.fill"
+        //    case .codabar:
+        //        return "creditcard.fill"
     }
 }

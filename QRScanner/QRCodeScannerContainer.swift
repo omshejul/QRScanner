@@ -41,7 +41,7 @@ struct QRCodeScannerContainer: View {
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
-
+    
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     
     // Add initialization of available cameras
@@ -67,7 +67,7 @@ struct QRCodeScannerContainer: View {
             self._selectedLens = State(initialValue: defaultCamera)
         }
     }
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -84,7 +84,7 @@ struct QRCodeScannerContainer: View {
                         detectAndOpenURL(from: code)
                     }, selectedDevice: selectedLens)
                     .edgesIgnoringSafeArea(.all)
-
+                    
                     // ✅ Scanner Overlay with L-Shaped Corners
                     GeometryReader { proxy in
                         ZStack {
@@ -92,7 +92,7 @@ struct QRCodeScannerContainer: View {
                             ScannerCorner(rotation: 90, position: getCornerPosition(.topTrailing, proxy: proxy))
                             ScannerCorner(rotation: 180, position: getCornerPosition(.bottomTrailing, proxy: proxy))
                             ScannerCorner(rotation: 270, position: getCornerPosition(.bottomLeading, proxy: proxy))
-
+                            
                             // ✅ Center Pulsing Overlay (Fixed)
                             Image("blank")
                                 .resizable()
@@ -114,7 +114,7 @@ struct QRCodeScannerContainer: View {
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 3)
                     }
                     .frame(width: scanBoxSize, height: scanBoxSize)
-
+                    
                     // Camera Controls
                     GeometryReader { proxy in
                         VStack(spacing: 10) {
@@ -128,7 +128,7 @@ struct QRCodeScannerContainer: View {
                             )
                             .frame(maxWidth: .infinity)
                             // .padding(.bottom, 20)
-
+                            
                             // Bottom Controls
                             BottomControls(
                                 selectedLens: selectedLens,
@@ -186,13 +186,13 @@ struct QRCodeScannerContainer: View {
         }
         .navigationBarHidden(true)
     }
-
+    
     // MARK: - Get Corner Positions Using GeometryReader
     private func getCornerPosition(_ alignment: Alignment, proxy: GeometryProxy) -> CGPoint {
         let centerX = proxy.size.width / 2
         let centerY = proxy.size.height / 2
         let halfSize = scanBoxSize / 2 - 20
-
+        
         switch alignment {
         case .topLeading:
             return CGPoint(x: centerX - halfSize, y: centerY - halfSize)
@@ -206,7 +206,7 @@ struct QRCodeScannerContainer: View {
             return CGPoint(x: centerX, y: centerY)
         }
     }
-
+    
     // MARK: - Toggle Flashlight
     private func toggleFlashlight() {
         Haptic.medium()
@@ -217,7 +217,7 @@ struct QRCodeScannerContainer: View {
             flashlightEnabled = false
             return
         }
-
+        
         do {
             try device.lockForConfiguration()
             
@@ -237,7 +237,7 @@ struct QRCodeScannerContainer: View {
             updateFlashlightState()
         }
     }
-
+    
     // MARK: - Turn Off Flashlight When Leaving Scanner
     private func turnOffFlashlight() {
         // Update UI state first
@@ -246,7 +246,7 @@ struct QRCodeScannerContainer: View {
         guard let device = selectedLens,
               device.hasTorch,
               device.position == .back else { return }
-
+        
         do {
             try device.lockForConfiguration()
             device.torchMode = .off
@@ -257,14 +257,14 @@ struct QRCodeScannerContainer: View {
             flashlightEnabled = false
         }
     }
-
+    
     // MARK: - Helper Functions
     private func getCameraDescription() -> String {
         guard let device = selectedLens else { return "Select Camera" }
         let position = device.position == .front ? "Front" : "Back"
         return "\(position) - \(getLensName(for: device))"
     }
-
+    
     private func getLensName(for camera: AVCaptureDevice) -> String {
         let magnification: String
         if camera.deviceType == .builtInUltraWideCamera {
@@ -291,7 +291,7 @@ struct QRCodeScannerContainer: View {
             return "Main \(magnification)"
         }
     }
-
+    
     private func getMagnificationText() -> String {
         guard let device = selectedLens else { return "1×" }
         
@@ -310,7 +310,7 @@ struct QRCodeScannerContainer: View {
             return "1×"
         }
     }
-
+    
     private func getMagnificationText2(for camera: AVCaptureDevice) -> String {
         if camera.deviceType == .builtInUltraWideCamera {
             return ".5×"
@@ -327,20 +327,20 @@ struct QRCodeScannerContainer: View {
             return "1×"
         }
     }
-
+    
     // MARK: - Play Scan Sound
     private func playScanSound() {
         if scanSoundEnabled {
             AudioServicesPlaySystemSound(1057) // Default QR scan beep
         }
-
+        
         if vibrationEnabled {
             let generator = UINotificationFeedbackGenerator()
             generator.prepare() // Prepare the generator for better response
             generator.notificationOccurred(.success)
         }
     }
-
+    
     // MARK: - Process Picked Image
     private func processPickedImage(_ image: UIImage) {
         isScanning = true
@@ -415,7 +415,7 @@ struct QRCodeScannerContainer: View {
             }
         }
     }
-
+    
     // Convert Vision barcode symbology to AVMetadataObject.ObjectType
     private func convertToAVMetadataType(from symbology: VNBarcodeSymbology) -> AVMetadataObject.ObjectType {
         switch symbology {
@@ -433,7 +433,7 @@ struct QRCodeScannerContainer: View {
         default: return .qr // Default to QR if no direct mapping
         }
     }
-
+    
     // MARK: - Update Flashlight State
     private func updateFlashlightState() {
         guard let device = selectedLens,
@@ -454,15 +454,15 @@ struct QRCodeScannerContainer: View {
             flashlightEnabled = false
         }
     }
-
+    
     // MARK: - Enhanced URL Detection
     private func detectAndOpenURL(from text: String) {
         guard autoOpenLinks else { return }
         
         // First try standard URL detection
-        if let url = URL(string: text), 
-           url.scheme?.lowercased() == "https", 
-           UIApplication.shared.canOpenURL(url) {
+        if let url = URL(string: text),
+            url.scheme?.lowercased() == "https",
+            UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
             return
         }
@@ -515,9 +515,9 @@ struct QRCodeScannerContainer: View {
 struct ScannerCorner: View {
     let rotation: Double
     let position: CGPoint
-
+    
     @State private var scaleEffect: CGFloat = 1.0
-
+    
     var body: some View {
         Image("scanner-overlay") // Ensure this asset is in Assets.xcassets
             .resizable()
@@ -733,7 +733,7 @@ private struct CameraLensSelector: View {
                     CameraLensButton(
                         camera: camera,
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
-                        action: { 
+                        action: {
                             onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
@@ -743,7 +743,7 @@ private struct CameraLensSelector: View {
                     CameraLensButton(
                         camera: camera,
                         isSelected: selectedLens?.uniqueID == camera.uniqueID,
-                        action: { 
+                        action: {
                             onSelect(camera)
                         },
                         magnificationText: getMagnificationText(camera)
