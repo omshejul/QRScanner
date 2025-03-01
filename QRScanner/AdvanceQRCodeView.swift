@@ -69,6 +69,7 @@ struct AdvanceQRCodeView: View {
                 }
 
                 GenerateQRButton(action: generateQRCode, isDisabled: isInputInvalid())
+                .padding()
 
                 Spacer()
             }

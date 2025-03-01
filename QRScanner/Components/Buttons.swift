@@ -280,12 +280,11 @@ struct AppButton: View {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(style.hasBorder ? (isDisabled ? Color.gray : style.borderColor) : Color.clear, lineWidth: 1.5)
             )
-            .shadow(color: (style == .plain || style == .outline || isDisabled) ? Color.clear : Color.black.opacity(0.1), 
+            .shadow(color: (style == .plain || style == .outline || isDisabled) ? Color.clear : Color.black.opacity(0.1),
                     radius: 2, x: 0, y: 1)
         }
         .buttonStyle(EnhancedButtonStyle(isAnimating: $isAnimating))
         .disabled(isDisabled || isLoading)
-        .padding(.horizontal, isFullWidth ? 16 : 0)
     }
     
     // MARK: - Modifier Methods
@@ -317,9 +316,9 @@ struct EnhancedButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed || isAnimating ? 0.96 : 1)
             .brightness(configuration.isPressed || isAnimating ? -0.05 : 0)
             .rotationEffect(Angle(degrees: configuration.isPressed || isAnimating ? -0.2 : 0))
-            .shadow(color: Color.black.opacity(configuration.isPressed || isAnimating ? 0.1 : 0.2), 
-                    radius: configuration.isPressed || isAnimating ? 1 : 3, 
-                    x: 0, 
+            .shadow(color: Color.black.opacity(configuration.isPressed || isAnimating ? 0.1 : 0.2),
+                    radius: configuration.isPressed || isAnimating ? 1 : 3,
+                    x: 0,
                     y: configuration.isPressed || isAnimating ? 1 : 2)
             .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed || isAnimating)
     }

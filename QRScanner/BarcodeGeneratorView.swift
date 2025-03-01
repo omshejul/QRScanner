@@ -133,6 +133,7 @@ struct BarcodeGeneratorView: View {
 
                 // Generate Button
                 GenerateBarcodeButton(action: generateBarcode, isDisabled: content.isEmpty)
+                .padding()
 
                 Spacer()
             }
