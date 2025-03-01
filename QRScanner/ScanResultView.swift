@@ -312,6 +312,24 @@ struct ActionButtonsView: View {
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         return URL(string: "https://www.\(domain)/s?k=\(encodedQuery)")
     }
+    
+    // MARK: - Extract Coordinates from geo: URL
+    private func extractCoordinates(from geoString: String) -> (latitude: Double, longitude: Double)? {
+        // Remove the "geo:" prefix and any additional parameters
+        let coordinateString = geoString
+            .replacingOccurrences(of: "geo:", with: "")
+            .components(separatedBy: ";").first ?? ""
+        
+        // Split by comma to get latitude and longitude
+        let components = coordinateString.components(separatedBy: ",")
+        guard components.count >= 2,
+              let latitude = Double(components[0]),
+              let longitude = Double(components[1]) else {
+            return nil
+        }
+        
+        return (latitude, longitude)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -341,6 +359,42 @@ struct ActionButtonsView: View {
                         // URL extracted from text
                         ActionButton(icon: "safari", text: "Open URL in Safari") {
                             UIApplication.shared.open(firstURL)
+                        }
+                        Divider()
+                    }
+                }
+                
+                // Location QR Code Handling
+                if scannedText.lowercased().starts(with: "geo:") {
+                    if let coordinates = extractCoordinates(from: scannedText) {
+                        let lat = coordinates.latitude
+                        let lon = coordinates.longitude
+                        
+                        // Apple Maps
+                        ActionButton(icon: "apple.logo", text: "Open in Apple Maps") {
+                            let url = URL(string: "https://maps.apple.com/?q=\(lat),\(lon)")!
+                            UIApplication.shared.open(url)
+                        }
+                        Divider()
+                        
+                        // Google Maps
+                        ActionButton(icon: "map", text: "Open in Google Maps") {
+                            let url = URL(string: "https://www.google.com/maps?q=\(lat),\(lon)")!
+                            UIApplication.shared.open(url)
+                        }
+                        Divider()
+                        
+                        // Waze
+                        ActionButton(icon: "car", text: "Open in Waze") {
+                            let url = URL(string: "https://waze.com/ul?ll=\(lat),\(lon)")!
+                            UIApplication.shared.open(url)
+                        }
+                        Divider()
+                        
+                        // Open in Safari (generic map link)
+                        ActionButton(icon: "safari", text: "Open in Safari") {
+                            let url = URL(string: "https://www.google.com/search?q=\(lat),\(lon)")!
+                            UIApplication.shared.open(url)
                         }
                         Divider()
                     }
