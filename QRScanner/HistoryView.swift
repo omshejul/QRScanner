@@ -351,26 +351,57 @@ struct HistoryView: View {
     
     // MARK: - Delete History Items
     private func deleteScanHistoryItem(at offsets: IndexSet) {
-        var savedHistory =
-        UserDefaults.standard.array(forKey: "scanHistory") as? [[String: Any]] ?? []
-        offsets.forEach { index in
-            if index < savedHistory.count {
-                savedHistory.remove(at: index)
-            }
+        // Get the sorted items as they appear in the UI
+        let sortedItems = scanHistory.sorted(by: { $0.timestamp > $1.timestamp })
+        
+        // Get the items to delete based on their IDs
+        let itemsToDelete = offsets.map { sortedItems[$0] }
+        
+        // Remove the items from the local array first
+        scanHistory.removeAll(where: { item in
+            itemsToDelete.contains(where: { $0.id == item.id })
+        })
+        
+        // Update UserDefaults with the new array
+        let updatedHistory = scanHistory.map { item -> [String: Any] in
+            return [
+                "text": item.text,
+                "type": item.type.rawValue,
+                "timestamp": item.timestamp
+            ]
         }
-        UserDefaults.standard.setValue(savedHistory, forKey: "scanHistory")
-        loadHistory()
+        
+        UserDefaults.standard.setValue(updatedHistory, forKey: "scanHistory")
+        
+        // Force UI refresh by updating the @State variable
+        scanHistory = scanHistory
     }
     
     private func deleteCreateHistoryItem(at offsets: IndexSet) {
-        var storedHistory =
-        UserDefaults.standard.array(forKey: "createHistory") as? [[String: Any]] ?? []
-        offsets.forEach { index in
-            if index < storedHistory.count {
-                storedHistory.remove(at: index)
-            }
+        // Get the sorted items as they appear in the UI
+        let sortedItems = createHistory.sorted(by: { $0.timestamp > $1.timestamp })
+        
+        // Get the items to delete based on their IDs
+        let itemsToDelete = offsets.map { sortedItems[$0] }
+        
+        // Remove the items from the local array first
+        createHistory.removeAll(where: { item in
+            itemsToDelete.contains(where: { $0.id == item.id })
+        })
+        
+        // Update UserDefaults with the new array
+        let updatedHistory = createHistory.map { item -> [String: Any] in
+            return [
+                "text": item.text,
+                "type": item.type.rawValue,
+                "timestamp": item.timestamp,
+                "displayType": item.displayType
+            ]
         }
-        UserDefaults.standard.setValue(storedHistory, forKey: "createHistory")
-        loadHistory()
+        
+        UserDefaults.standard.setValue(updatedHistory, forKey: "createHistory")
+        
+        // Force UI refresh by updating the @State variable
+        createHistory = createHistory
     }
 }
