@@ -103,8 +103,7 @@ struct QRCodeScannerContainer: View {
                                 .onAppear {
                                     overlayScale = 1.05 // ✅ Ensure stable scale
                                     withAnimation(
-                                        Animation.easeInOut(duration: 1.2)
-                                            .repeatForever(autoreverses: true)
+                                        AppAnimations.scannerPulse
                                     ) {
                                         overlayScale = 1.1
                                     }
@@ -527,8 +526,7 @@ struct ScannerCorner: View {
             .position(position)
             .scaleEffect(scaleEffect)
             .animation(
-                Animation.bouncy(duration: 1.2, extraBounce: 1)
-                    .repeatForever(autoreverses: true),
+                AppAnimations.scannerBounce,
                 value: scaleEffect
             )
             .onAppear {
@@ -973,6 +971,6 @@ private struct NoCodeFoundOverlay: View {
             .frame(maxWidth: 280)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
-        .animation(.spring(response: 0.3), value: true)
+        .animation(AppAnimations.viewTransition, value: true)
     }
 }

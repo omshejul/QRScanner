@@ -10,6 +10,9 @@ struct BarcodeGeneratorView: View {
     @State private var barcodeShareURL: URL?
     @State private var isGenerating: Bool = false
     @State private var errorMessage: String?
+    @State private var barcodeScale: CGFloat = QRAnimationConfig.initialScale
+    @State private var barcodeOpacity: Double = QRAnimationConfig.initialOpacity
+    @State private var barcodeBlur: CGFloat = QRAnimationConfig.initialBlur
     
     var body: some View {
         ScrollView {
@@ -113,6 +116,12 @@ struct BarcodeGeneratorView: View {
                             .background(Color.white)
                             .cornerRadius(16)
                             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                            .scaleEffect(barcodeScale)
+                            .animation(QRAnimationConfig.scaleAnimation, value: barcodeScale)
+                            .opacity(barcodeOpacity)
+                            .animation(QRAnimationConfig.opacityAnimation, value: barcodeOpacity)
+                            .blur(radius: barcodeBlur)
+                            .animation(QRAnimationConfig.blurAnimation, value: barcodeBlur)
                         
                         ActionButtonCenter(
                             icon: "square.and.arrow.up",
@@ -128,6 +137,8 @@ struct BarcodeGeneratorView: View {
                                 ShareSheet(activityItems: [shareURL])
                             }
                         }
+                        .opacity(barcodeOpacity)
+                        .animation(QRAnimationConfig.shareButtonAnimation, value: barcodeOpacity)
                     }
                 }
                 
@@ -168,12 +179,28 @@ struct BarcodeGeneratorView: View {
         hideKeyboard()
         errorMessage = nil
         
+        // Reset animation states if regenerating
+        if generatedBarcode != nil {
+            QRAnimationConfig.resetAnimationStates(
+                scale: $barcodeScale,
+                opacity: $barcodeOpacity,
+                blur: $barcodeBlur
+            )
+        }
+        
         let generator = RSUnifiedCodeGenerator.shared
         let objectType = getBarcodeObjectType()
         
         if let image = generator.generateCode(content, machineReadableCodeObjectType: objectType) {
             generatedBarcode = image
             saveToCreateHistory(content)
+            
+            // Animate the barcode appearance
+            QRAnimationConfig.animateToFinalStates(
+                scale: $barcodeScale,
+                opacity: $barcodeOpacity,
+                blur: $barcodeBlur
+            )
         } else {
             errorMessage = "Invalid content for \(type.rawValue)"
         }
@@ -322,8 +349,6 @@ struct BarcodeGeneratorView: View {
         UserDefaults.standard.setValue(history, forKey: "createHistory")
     }
 }
-
-
 
 // MARK: - Helper Function to Get Barcode Icons
 private func getBarcodeIcon(for type: BarcodeType) -> String {

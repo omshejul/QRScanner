@@ -247,7 +247,7 @@ struct AppButton: View {
                 // Keep showing the loading state for a bit longer (total 0.4 seconds)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     // Reset animation state after action completes and loading time finishes
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    withAnimation(AppAnimations.buttonAction) {
                         self.isAnimating = false
                         self.isLoading = false
                     }
@@ -327,7 +327,7 @@ struct EnhancedButtonStyle: ButtonStyle {
                     radius: configuration.isPressed || isAnimating ? 1 : 3,
                     x: 0,
                     y: configuration.isPressed || isAnimating ? 1 : 2)
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed || isAnimating)
+            .animation(AppAnimations.buttonPress, value: configuration.isPressed || isAnimating)
     }
 }
 

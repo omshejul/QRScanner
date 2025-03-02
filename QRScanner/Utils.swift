@@ -99,7 +99,7 @@ struct AnimatedNumberView: View {
                     DigitScrollView(
                         targetDigit: Int(String(char)) ?? 0,
                         previousDigit: hasInitialized ? nil : Int(String(char)) ?? 0,
-                        animationDuration: 0.8
+                        animationDuration: 0.8 // This value is not used anymore since we're using AppAnimations.digitRoll
                     )
                     .frame(width: 8) // Adjust width as needed
                 } else {
@@ -155,7 +155,7 @@ struct DigitScrollView: View {
                 }
             }
             .offset(y: -CGFloat(animatingDigit) * geometry.size.height)
-            .animation(shouldAnimate ? .easeInOut(duration: animationDuration) : nil, value: animatingDigit)
+            .animation(shouldAnimate ? AppAnimations.digitRoll : nil, value: animatingDigit)
         }
         .frame(height: 20) // Adjust height as needed
         .clipped() // Clip to show only the current digit

@@ -95,6 +95,11 @@ struct AdvanceQRCodeView: View {
         }
         
         if let image = generateQRCodeImage(from: qrString, isDarkMode: getCurrentThemeMode()) {
+            // If we already have a QR code, the QRCodeImageView will already exist
+            // We need to reset its animation states before setting a new image
+            NotificationCenter.default.post(name: QRAnimationConfig.resetAnimationNotification, object: nil)
+            
+            // Set the new QR code image
             qrImage = image
             saveToCreateHistory(qrString)
         }

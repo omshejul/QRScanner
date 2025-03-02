@@ -252,7 +252,7 @@ struct LocationMapView: View {
                             // .frame(width: 250)
                             .padding(.bottom, 88) // Add padding to position above the buttons
                             .transition(.opacity)
-                            .animation(.easeInOut, value: selectedLocation != nil)
+                            .animation(AppAnimations.contentTransition, value: selectedLocation != nil)
                     }
                 }
             }

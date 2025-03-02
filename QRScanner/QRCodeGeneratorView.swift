@@ -281,6 +281,9 @@ struct SocialQRCodeView: View {
     @State private var qrShareURL: URL?
     @State private var isGeneratingQR = false
     @State private var isQRReady = false
+    @State private var qrCodeScale: CGFloat = QRAnimationConfig.initialScale
+    @State private var qrCodeOpacity: Double = QRAnimationConfig.initialOpacity
+    @State private var qrCodeBlur: CGFloat = QRAnimationConfig.initialBlur
     
     var body: some View {
         ScrollView {
@@ -316,6 +319,12 @@ struct SocialQRCodeView: View {
                         .scaledToFit()
                         .frame(width: 200, height: 200)
                         .padding()
+                        .scaleEffect(qrCodeScale)
+                        .animation(QRAnimationConfig.scaleAnimation, value: qrCodeScale)
+                        .opacity(qrCodeOpacity)
+                        .animation(QRAnimationConfig.opacityAnimation, value: qrCodeOpacity)
+                        .blur(radius: qrCodeBlur)
+                        .animation(QRAnimationConfig.blurAnimation, value: qrCodeBlur)
                     
                     // ✅ Share QR Button
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
@@ -329,6 +338,8 @@ struct SocialQRCodeView: View {
                             ShareSheet(activityItems: [qrShareURL])
                         }
                     }
+                    .opacity(qrCodeOpacity)
+                    .animation(QRAnimationConfig.shareButtonAnimation, value: qrCodeOpacity)
                 }
                 GenerateSocialQRButton(action: generateQRCode)
                     .padding(.vertical)
@@ -347,10 +358,26 @@ struct SocialQRCodeView: View {
         hideKeyboard()
         let fullURL = templateURL + username
         
+        // Reset animation states if regenerating
+        if generatedQRCode != nil {
+            QRAnimationConfig.resetAnimationStates(
+                scale: $qrCodeScale,
+                opacity: $qrCodeOpacity,
+                blur: $qrCodeBlur
+            )
+        }
+        
         if let image = generateQRCodeImage(from: fullURL, isDarkMode: getCurrentThemeMode()) {
             generatedQRCode = image
             isQRReady = true // ✅ QR is ready for sharing
             saveToCreateHistory(fullURL)
+            
+            // Animate the QR code appearance
+            QRAnimationConfig.animateToFinalStates(
+                scale: $qrCodeScale,
+                opacity: $qrCodeOpacity,
+                blur: $qrCodeBlur
+            )
         }
     }
     

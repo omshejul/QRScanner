@@ -393,6 +393,11 @@ struct BASICQRCodeView: View {
         }
         
         if let image = generateQRCodeImage(from: qrString, isDarkMode: getCurrentThemeMode()) {
+            // If we already have a QR code, the QRCodeImageView will already exist
+            // We need to reset its animation states before setting a new image
+            NotificationCenter.default.post(name: QRAnimationConfig.resetAnimationNotification, object: nil)
+            
+            // Set the new QR code image
             qrImage = image
             print("Saving to history: \(qrString)")
             saveToCreateHistory(qrString)
@@ -644,6 +649,9 @@ struct ContactFields: View {
 struct QRCodeImageView: View {
     let qrImage: UIImage
     @State private var isSharing = false
+    @State private var qrCodeScale: CGFloat = QRAnimationConfig.initialScale
+    @State private var qrCodeOpacity: Double = QRAnimationConfig.initialOpacity
+    @State private var qrCodeBlur: CGFloat = QRAnimationConfig.initialBlur
     
     var body: some View {
         VStack {
@@ -653,10 +661,40 @@ struct QRCodeImageView: View {
                 .scaledToFit()
                 .frame(width: 200, height: 200)
                 .padding(10)
-            
+                .scaleEffect(qrCodeScale)
+                .animation(QRAnimationConfig.scaleAnimation, value: qrCodeScale)
+                .opacity(qrCodeOpacity)
+                .animation(QRAnimationConfig.opacityAnimation, value: qrCodeOpacity)
+                .blur(radius: qrCodeBlur)
+                .animation(QRAnimationConfig.blurAnimation, value: qrCodeBlur)
                 .padding(.horizontal)
                 .sheet(isPresented: $isSharing) {
                     ShareSheet(activityItems: [qrImage])
+                }
+                .onAppear {
+                    // Animate when the view appears
+                    QRAnimationConfig.animateToFinalStates(
+                        scale: $qrCodeScale,
+                        opacity: $qrCodeOpacity,
+                        blur: $qrCodeBlur
+                    )
+                }
+                .onReceive(NotificationCenter.default.publisher(for: QRAnimationConfig.resetAnimationNotification)) { _ in
+                    // Reset animation states when notification is received
+                    QRAnimationConfig.resetAnimationStates(
+                        scale: $qrCodeScale,
+                        opacity: $qrCodeOpacity,
+                        blur: $qrCodeBlur
+                    )
+                    
+                    // Re-animate after a brief delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        QRAnimationConfig.animateToFinalStates(
+                            scale: $qrCodeScale,
+                            opacity: $qrCodeOpacity,
+                            blur: $qrCodeBlur
+                        )
+                    }
                 }
         }
     }
