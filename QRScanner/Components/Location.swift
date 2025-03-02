@@ -120,50 +120,50 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
-// MARK: - Selected Location Info View
+// MARK: - Location Info View
 struct LocationInfoView: View {
     let location: CLLocationCoordinate2D
     
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             HStack {
                 Image(systemName: "mappin.circle.fill")
                     .foregroundColor(.blue)
-                    .font(.system(size: 22))
+                    .font(.system(size: 18))
                 Text("Selected Location")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.semibold)
             }
-            HStack {
-                VStack {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading) {
                     Text("Latitude:")
-                        .foregroundColor(.primary)
-                        .font(.headline)
-                    Text(String(format: "%.6f", location.latitude))
-                        .font(.system(.subheadline, design: .monospaced))
-                        .fontWeight(.medium)
+                        .font(.system(.caption, design: .monospaced))
+                    Text("\(String(format: "%.6f", location.latitude))")
+                        .font(.system(.caption, design: .monospaced))
                 }
                 
-                VStack {
+                Divider()
+                    .frame(height: 20)
+                    .background(Color.blue.opacity(0.2))
+                
+                VStack(alignment: .leading) {
                     Text("Longitude:")
-                        .foregroundColor(.primary)
-                        .font(.headline)
-                    Text(String(format: "%.6f", location.longitude))
-                        .font(.system(.subheadline, design: .monospaced))
-                        .fontWeight(.medium)
+                        .font(.system(.caption, design: .monospaced))
+                    Text("\(String(format: "%.6f", location.longitude))")
+                        .font(.system(.caption, design: .monospaced))
                 }
             }
         }
-        .padding()
-        .background(Color.blue.opacity(0.1))
-        .cornerRadius(12)
+        .padding(10)
+        .background(Color(.systemGray5).opacity(0.8))
+        // .background(Color.blue.opacity(0.2))
+        .cornerRadius(10)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4))
         )
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-        // No bottom padding
-        .padding([.top, .leading, .trailing])
+        .padding()
     }
 }
 
@@ -184,7 +184,7 @@ struct LocationMapView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
+            ZStack(alignment: .bottomTrailing) {
                 if locationManager.isLoading {
                     ProgressView("Getting your location...")
                         .padding()
@@ -199,8 +199,7 @@ struct LocationMapView: View {
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
-                        // Show location info if a location is selected
-                        selectedLocationView
+
                         
                         HStack {
                             Button(action: {
@@ -237,6 +236,14 @@ struct LocationMapView: View {
                             .disabled(selectedLocation == nil)
                         }
                         .padding()
+                    }
+                    // Location info view in bottom right
+                    if let location = selectedLocation{
+                        LocationInfoView(location: location)
+                            // .frame(width: 250)
+                            .padding(.bottom, 88) // Add padding to position above the buttons
+                            .transition(.opacity)
+                            .animation(.easeInOut, value: selectedLocation != nil)
                     }
                 }
             }
