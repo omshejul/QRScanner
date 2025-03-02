@@ -10,6 +10,8 @@ import CoreImage.CIFilterBuiltins
 import AVFoundation
 import RSBarcodes_Swift
 import LinkPresentation
+import Contacts
+import ContactsUI
 //import URLDetectorUtility
 
 struct ScanResultView: View {
@@ -702,11 +704,101 @@ struct ActionButtonsView: View {
     // MARK: - Save Contact (vCard)
     func saveContact(_ vCard: String) {
         print("Saving vCard: \(vCard)")
-        // vCard import functionality requires Contacts API (not included here)
+        
+        // Normalize vCard data
+        let normalizedVCard = normalizeVCardData(vCard)
+        
+        // Create a CNContact from vCard data
+        let data = normalizedVCard.data(using: .utf8)
+        if let data = data {
+            do {
+                let contacts = try CNContactVCardSerialization.contacts(with: data)
+                if let contact = contacts.first {
+                    // Present the contact view controller using the ContactPresenter class
+                    ContactPresenter.shared.presentContact(contact)
+                } else {
+                    showErrorAlert(message: "No valid contact information found in the QR code.")
+                    print("No contacts found in vCard data")
+                }
+            } catch {
+                showErrorAlert(message: "Could not parse contact information: \(error.localizedDescription)")
+                print("Error parsing vCard data: \(error)")
+            }
+        } else {
+            showErrorAlert(message: "Invalid contact data format.")
+        }
+    }
+    
+    // Show error alert to user
+    private func showErrorAlert(message: String) {
+        let alert = UIAlertController(
+            title: "Contact Error",
+            message: message,
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        // Present the alert
+        if #available(iOS 15.0, *) {
+            if let windowScene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+               let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+               let rootVC = window.rootViewController {
+                
+                var currentVC = rootVC
+                while let presentedVC = currentVC.presentedViewController {
+                    currentVC = presentedVC
+                }
+                
+                currentVC.present(alert, animated: true)
+            }
+        } else {
+            if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                var currentVC = rootVC
+                while let presentedVC = currentVC.presentedViewController {
+                    currentVC = presentedVC
+                }
+                
+                currentVC.present(alert, animated: true)
+            }
+        }
+    }
+    
+    // Helper method to normalize vCard data
+    private func normalizeVCardData(_ vCardString: String) -> String {
+        var vCard = vCardString
+        
+        // Ensure vCard starts with BEGIN:VCARD
+        if !vCard.hasPrefix("BEGIN:VCARD") {
+            vCard = "BEGIN:VCARD\n" + vCard
+        }
+        
+        // Ensure vCard ends with END:VCARD
+        if !vCard.hasSuffix("END:VCARD") {
+            vCard = vCard + "\nEND:VCARD"
+        }
+        
+        // Replace any double line breaks with single line breaks
+        vCard = vCard.replacingOccurrences(of: "\n\n", with: "\n")
+        
+        // Ensure version is specified
+        if !vCard.contains("VERSION:") {
+            vCard = vCard.replacingOccurrences(of: "BEGIN:VCARD\n", with: "BEGIN:VCARD\nVERSION:3.0\n")
+        }
+        
+        return vCard
     }
 }
 
-
+// MARK: - Contact View Controller Delegate
+class ContactViewControllerDelegate: NSObject, CNContactViewControllerDelegate {
+    static let shared = ContactViewControllerDelegate()
+    
+    func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {
+        viewController.dismiss(animated: true, completion: nil)
+    }
+}
 
 // MARK: - Open Email (MATMSG Format)
 func openMATMSGEmail(_ text: String) {
@@ -770,7 +862,6 @@ struct ActionButton: View {
                 //                Spacer()
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundColor(.blue)
                 
                 Text(text)
                     .foregroundColor(.blue)
@@ -796,7 +887,6 @@ struct ActionButtonCenter: View {
                 Spacer()
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundColor(.blue)
                 
                 Text(text)
                     .foregroundColor(.blue)
@@ -1108,5 +1198,81 @@ struct RichLinkPreview: View {
     // Helper to check if the string is a valid link
     private func isValidLink(_ string: String) -> Bool {
         return URLDetectorUtility.shared.isValidWebLink(string)
+    }
+}
+
+// MARK: - Contact Presenter
+class ContactPresenter: NSObject {
+    static let shared = ContactPresenter()
+    
+    func presentContact(_ contact: CNContact) {
+        let contactViewController = CNContactViewController(forUnknownContact: contact)
+        contactViewController.contactStore = CNContactStore()
+        contactViewController.allowsActions = true
+        contactViewController.allowsEditing = false
+        contactViewController.delegate = ContactViewControllerDelegate.shared
+        
+        // Create a navigation controller
+        let navigationController = UINavigationController(rootViewController: contactViewController)
+        
+        // Add a cancel button to the navigation bar
+        contactViewController.navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .cancel,
+            target: self,
+            action: #selector(dismissContactVC)
+        )
+        
+        // Get the current UIViewController - iOS 15+ compatible approach
+        var currentVC: UIViewController?
+        
+        if #available(iOS 15.0, *) {
+            // Get the active window scene
+            if let windowScene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+               let window = windowScene.windows.first(where: { $0.isKeyWindow }) {
+                currentVC = window.rootViewController
+            }
+        } else {
+            // Fallback for iOS 14 and earlier
+            currentVC = UIApplication.shared.windows.first?.rootViewController
+        }
+        
+        // Find the topmost presented view controller
+        if let rootVC = currentVC {
+            var topmostVC = rootVC
+            while let presentedVC = topmostVC.presentedViewController {
+                topmostVC = presentedVC
+            }
+            
+            // Present the navigation controller
+            topmostVC.present(navigationController, animated: true, completion: nil)
+        }
+    }
+    
+    @objc func dismissContactVC() {
+        // Dismiss the presented view controller
+        if #available(iOS 15.0, *) {
+            if let windowScene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+               let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+               let rootVC = window.rootViewController {
+                
+                var currentVC = rootVC
+                while let presentedVC = currentVC.presentedViewController {
+                    currentVC = presentedVC
+                }
+                
+                currentVC.dismiss(animated: true, completion: nil)
+            }
+        } else {
+            if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                var currentVC = rootVC
+                while let presentedVC = currentVC.presentedViewController {
+                    currentVC = presentedVC
+                }
+                
+                currentVC.dismiss(animated: true, completion: nil)
+            }
+        }
     }
 }
