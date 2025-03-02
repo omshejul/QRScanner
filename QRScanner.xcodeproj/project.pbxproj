@@ -8,43 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		4B08D8E32D6DB12F00702DEC /* RSBarcodes_Swift in Frameworks */ = {isa = PBXBuildFile; productRef = 4B08D8E22D6DB12F00702DEC /* RSBarcodes_Swift */; };
-		4B67C7EE2D717CB800FB1550 /* ScanWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B67C7DD2D717CB700FB1550 /* ScanWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		4B67C7F32D717D9E00FB1550 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4BE380A32D70AE5A00D224A7 /* SwiftUI.framework */; };
-		4B67C7F42D717D9E00FB1550 /* SwiftUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4BE380A32D70AE5A00D224A7 /* SwiftUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		4B67C7F62D717DA000FB1550 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4BE380A12D70AE5A00D224A7 /* WidgetKit.framework */; };
-		4B67C7F72D717DA000FB1550 /* WidgetKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4BE380A12D70AE5A00D224A7 /* WidgetKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		4B67C7EC2D717CB800FB1550 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 4B14187A2D634C2D0015B643 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 4B67C7DC2D717CB700FB1550;
-			remoteInfo = ScanWidgetExtension;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXCopyFilesBuildPhase section */
-		4B67C7F52D717D9E00FB1550 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				4B67C7F42D717D9E00FB1550 /* SwiftUI.framework in Embed Frameworks */,
-				4B67C7F72D717DA000FB1550 /* WidgetKit.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		4BE380BA2D70AE5C00D224A7 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				4B67C7EE2D717CB800FB1550 /* ScanWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -53,33 +25,13 @@
 
 /* Begin PBXFileReference section */
 		4B1418822D634C2D0015B643 /* QRScanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QRScanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4B67C7DD2D717CB700FB1550 /* ScanWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScanWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		4BE380A12D70AE5A00D224A7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		4BE380A32D70AE5A00D224A7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4B67C7EF2D717CB800FB1550 /* Exceptions for "ScanWidget" folder in "ScanWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 4B67C7DC2D717CB700FB1550 /* ScanWidgetExtension */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B1418842D634C2D0015B643 /* QRScanner */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = QRScanner;
-			sourceTree = "<group>";
-		};
-		4B67C7E02D717CB700FB1550 /* ScanWidget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				4B67C7EF2D717CB800FB1550 /* Exceptions for "ScanWidget" folder in "ScanWidgetExtension" target */,
-			);
-			path = ScanWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -93,15 +45,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4B67C7DA2D717CB700FB1550 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4B67C7F32D717D9E00FB1550 /* SwiftUI.framework in Frameworks */,
-				4B67C7F62D717DA000FB1550 /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -109,7 +52,6 @@
 			isa = PBXGroup;
 			children = (
 				4B1418842D634C2D0015B643 /* QRScanner */,
-				4B67C7E02D717CB700FB1550 /* ScanWidget */,
 				4BE380A02D70AE5A00D224A7 /* Frameworks */,
 				4B1418832D634C2D0015B643 /* Products */,
 			);
@@ -119,7 +61,6 @@
 			isa = PBXGroup;
 			children = (
 				4B1418822D634C2D0015B643 /* QRScanner.app */,
-				4B67C7DD2D717CB700FB1550 /* ScanWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -127,7 +68,6 @@
 		4BE380A02D70AE5A00D224A7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4BE380A12D70AE5A00D224A7 /* WidgetKit.framework */,
 				4BE380A32D70AE5A00D224A7 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
@@ -148,7 +88,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				4B67C7ED2D717CB800FB1550 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4B1418842D634C2D0015B643 /* QRScanner */,
@@ -161,29 +100,6 @@
 			productReference = 4B1418822D634C2D0015B643 /* QRScanner.app */;
 			productType = "com.apple.product-type.application";
 		};
-		4B67C7DC2D717CB700FB1550 /* ScanWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 4B67C7F02D717CB800FB1550 /* Build configuration list for PBXNativeTarget "ScanWidgetExtension" */;
-			buildPhases = (
-				4B67C7D92D717CB700FB1550 /* Sources */,
-				4B67C7DA2D717CB700FB1550 /* Frameworks */,
-				4B67C7DB2D717CB700FB1550 /* Resources */,
-				4B67C7F52D717D9E00FB1550 /* Embed Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				4B67C7E02D717CB700FB1550 /* ScanWidget */,
-			);
-			name = ScanWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = ScanWidgetExtension;
-			productReference = 4B67C7DD2D717CB700FB1550 /* ScanWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -195,9 +111,6 @@
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					4B1418812D634C2D0015B643 = {
-						CreatedOnToolsVersion = 16.2;
-					};
-					4B67C7DC2D717CB700FB1550 = {
 						CreatedOnToolsVersion = 16.2;
 					};
 				};
@@ -220,20 +133,12 @@
 			projectRoot = "";
 			targets = (
 				4B1418812D634C2D0015B643 /* QRScanner */,
-				4B67C7DC2D717CB700FB1550 /* ScanWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4B1418802D634C2D0015B643 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		4B67C7DB2D717CB700FB1550 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -250,22 +155,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		4B67C7D92D717CB700FB1550 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		4B67C7ED2D717CB800FB1550 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 4B67C7DC2D717CB700FB1550 /* ScanWidgetExtension */;
-			targetProxy = 4B67C7EC2D717CB800FB1550 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4B14188E2D634C2F0015B643 /* Debug */ = {
@@ -459,64 +349,6 @@
 			};
 			name = Release;
 		};
-		4B67C7F12D717CB800FB1550 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M4K84L4TKR;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ScanWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ScanWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner.ScanWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		4B67C7F22D717CB800FB1550 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = M4K84L4TKR;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ScanWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ScanWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner.ScanWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -534,15 +366,6 @@
 			buildConfigurations = (
 				4B1418912D634C2F0015B643 /* Debug */,
 				4B1418922D634C2F0015B643 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		4B67C7F02D717CB800FB1550 /* Build configuration list for PBXNativeTarget "ScanWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				4B67C7F12D717CB800FB1550 /* Debug */,
-				4B67C7F22D717CB800FB1550 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
