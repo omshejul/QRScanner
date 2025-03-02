@@ -123,6 +123,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 // MARK: - Location Info View
 struct LocationInfoView: View {
     let location: CLLocationCoordinate2D
+    @State private var previousLatitude: Double = 0
+    @State private var previousLongitude: Double = 0
+    @State private var animationTrigger = false
     
     var body: some View {
         VStack(spacing: 8) {
@@ -138,7 +141,7 @@ struct LocationInfoView: View {
                 VStack(alignment: .leading) {
                     Text("Latitude:")
                         .font(.system(.caption, design: .monospaced))
-                    Text("\(String(format: "%.6f", location.latitude))")
+                    AnimatedNumberView(value: location.latitude, precision: 6)
                         .font(.system(.caption, design: .monospaced))
                 }
                 
@@ -149,7 +152,7 @@ struct LocationInfoView: View {
                 VStack(alignment: .leading) {
                     Text("Longitude:")
                         .font(.system(.caption, design: .monospaced))
-                    Text("\(String(format: "%.6f", location.longitude))")
+                    AnimatedNumberView(value: location.longitude, precision: 6)
                         .font(.system(.caption, design: .monospaced))
                 }
             }
@@ -164,8 +167,14 @@ struct LocationInfoView: View {
         )
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
         .padding()
+        .onAppear {
+            previousLatitude = location.latitude
+            previousLongitude = location.longitude
+        }
     }
 }
+
+
 
 // MARK: - Map View
 struct LocationMapView: View {

@@ -147,6 +147,7 @@ struct QRCodeGeneratorView: View {
                             QRCodeOptionRow(icon: getBarcodeIcon(for: type), title: type.rawValue)
                         }
                     }
+                    // .padding(.vertical, 4)
                     
                     // Data Matrix (Coming Soon)
                     // HStack {
@@ -163,7 +164,6 @@ struct QRCodeGeneratorView: View {
                     //         .foregroundColor(.gray)
                     //         .padding(.leading, 4)
                     // }
-                    .padding(.vertical, 4)
                 }
                 
                 
