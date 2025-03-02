@@ -149,20 +149,20 @@ struct QRCodeGeneratorView: View {
                     }
                     
                     // Data Matrix (Coming Soon)
-                    HStack {
-                        Image(systemName: "square.grid.2x2")
-                            .foregroundColor(.gray)
-                            .frame(width: 25, height: 25)
-                            .aspectRatio(contentMode: .fit)
-                            .alignmentGuide(.firstTextBaseline) { d in d[.leading] }
+                    // HStack {
+                    //     Image(systemName: "square.grid.2x2")
+                    //         .foregroundColor(.gray)
+                    //         .frame(width: 25, height: 25)
+                    //         .aspectRatio(contentMode: .fit)
+                    //         .alignmentGuide(.firstTextBaseline) { d in d[.leading] }
                         
-                        Text("Data Matrix")
-                            .foregroundColor(.gray)
-                        Text("(Coming Soon)")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .padding(.leading, 4)
-                    }
+                    //     Text("Data Matrix")
+                    //         .foregroundColor(.gray)
+                    //     Text("(Coming Soon)")
+                    //         .font(.caption)
+                    //         .foregroundColor(.gray)
+                    //         .padding(.leading, 4)
+                    // }
                     .padding(.vertical, 4)
                 }
                 
