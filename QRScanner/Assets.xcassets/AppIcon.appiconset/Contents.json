@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "lightv17.png",
+      "filename" : "darkv23.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "darkv16.png",
+      "filename" : "tintv23.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "darkv16 1.png",
+      "filename" : "tintv23 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
