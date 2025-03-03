@@ -7,7 +7,7 @@ struct QRAnimationConfig {
     static let finalScale: CGFloat = 1.0
     static let initialOpacity: Double = 0.5
     static let finalOpacity: Double = 1.0
-    static let initialBlur: CGFloat = 50 // Blur radius range is typically 0-100, with 0 being no blur
+    static let initialBlur: CGFloat = 50 // range 0-100
     static let finalBlur: CGFloat = 0
     
     // Animation timing
