@@ -27,6 +27,8 @@ struct ScanResultView: View {
     @State private var formattedURLString: String = ""
     @State private var extractedURLs: [URL] = []
     
+
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -443,6 +445,16 @@ struct ActionButtonsView: View {
                 if scannedText.lowercased().starts(with: "upi://pay") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
                         showUPIAppSelection(for: scannedText)
+                    }
+                    .onAppear {
+                        // Check if auto-open is enabled and a default app is set
+                        if let autoOpenUPI = UserDefaults.standard.value(forKey: "autoOpenUPI") as? Bool,
+                           autoOpenUPI,
+                           let defaultApp = UserDefaults.standard.string(forKey: "defaultUPIApp"),
+                           defaultApp != "None" {
+                            // Open directly with the default app
+                            openUPILink(scannedText, with: defaultApp)
+                        }
                     }
                     Divider()
                 }
@@ -906,45 +918,31 @@ func showUPIAppSelection(for upiLink: String) {
     
     // Add all UPI apps
     alert.addAction(UIAlertAction(title: "PhonePe", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "phonepe://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "PhonePe")
     }))
     
     alert.addAction(UIAlertAction(title: "Google Pay", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "gpay://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "Google Pay")
     }))
     
     alert.addAction(UIAlertAction(title: "Paytm", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "paytmmp://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "Paytm")
     }))
     
     alert.addAction(UIAlertAction(title: "CRED", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "credpay://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "CRED")
     }))
     
     alert.addAction(UIAlertAction(title: "BHIM", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "bhim://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "BHIM")
     }))
     
     alert.addAction(UIAlertAction(title: "Amazon Pay", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "amazonpay://upi/pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "Amazon Pay")
     }))
     
     alert.addAction(UIAlertAction(title: "WhatsApp", style: .default, handler: { _ in
-        if let url = URL(string: upiLink.replacingOccurrences(of: "upi://pay", with: "upi://pay")) {
-            UIApplication.shared.open(url, options: [:]) { _ in }
-        }
+        openUPILink(upiLink, with: "WhatsApp")
     }))
     
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
@@ -1274,5 +1272,31 @@ class ContactPresenter: NSObject {
                 currentVC.dismiss(animated: true, completion: nil)
             }
         }
+    }
+}
+// Helper function to open UPI link with specific app
+func openUPILink(_ upiLink: String, with app: String) {
+    let urlString: String
+    switch app {
+    case "PhonePe":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "phonepe://upi/pay")
+    case "Google Pay":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "gpay://upi/pay")
+    case "Paytm":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "paytmmp://upi/pay")
+    case "CRED":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "credpay://upi/pay")
+    case "BHIM":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "bhim://upi/pay")
+    case "Amazon Pay":
+        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "amazonpay://upi/pay")
+    case "WhatsApp":
+        urlString = upiLink // WhatsApp uses the default UPI scheme
+    default:
+        urlString = upiLink
+    }
+    
+    if let url = URL(string: urlString) {
+        UIApplication.shared.open(url, options: [:]) { _ in }
     }
 }

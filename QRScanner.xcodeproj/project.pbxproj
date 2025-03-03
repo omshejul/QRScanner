@@ -28,9 +28,22 @@
 		4BE380A32D70AE5A00D224A7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4B10F4242D75C7DA0032A1E7 /* Exceptions for "QRScanner" folder in "QRScanner" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B1418812D634C2D0015B643 /* QRScanner */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B1418842D634C2D0015B643 /* QRScanner */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4B10F4242D75C7DA0032A1E7 /* Exceptions for "QRScanner" folder in "QRScanner" target */,
+			);
 			path = QRScanner;
 			sourceTree = "<group>";
 		};
@@ -286,11 +299,12 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = QRScanner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scan;
 				INFOPLIST_KEY_NSCameraUsageDescription = "QRScanner needs access to your camera to scan QR codes";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "QRScanner needs access to your location to create QR codes";
@@ -304,7 +318,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -323,11 +337,12 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = QRScanner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scan;
 				INFOPLIST_KEY_NSCameraUsageDescription = "QRScanner needs access to your camera to scan QR codes";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "QRScanner needs access to your location to create QR codes";
@@ -341,7 +356,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

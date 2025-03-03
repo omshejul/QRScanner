@@ -12,11 +12,15 @@ struct SettingsView: View {
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("themeMode") private var themeMode = "Device"
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
+    @AppStorage("autoOpenUPI") private var autoOpenUPI = false
+    @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
     
     @State private var showResetConfirmation = false
     @State private var showThemeOptions = false
+    @State private var showUPIAppOptions = false
     
     let themeOptions = ["Device", "Light", "Dark"]
+    let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
     
     var body: some View {
         NavigationStack {
@@ -58,6 +62,48 @@ struct SettingsView: View {
                     }
                     .accessibilityLabel("Auto Open Links")
                     .accessibilityHint("Toggle to enable or disable automatic opening of secure links.")
+                }
+                
+                // MARK: - UPI Settings
+                Section(header: Text("UPI Settings"), footer: Text("Choose your preferred UPI payment app for quick access.")) {
+                    Toggle(isOn: $autoOpenUPI) {
+                        Label {
+                            Text("Auto Open UPI Payments")
+                        } icon: {
+                            Image(systemName: "indianrupeesign.circle")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .accessibilityLabel("Auto Open UPI Payments")
+                    .accessibilityHint("Toggle to enable or disable automatic opening of UPI payment links.")
+                    
+                    if autoOpenUPI {
+                        Button {
+                            showUPIAppOptions = true
+                        } label: {
+                            HStack {
+                                Label {
+                                    Text("Default UPI App")
+                                        .foregroundColor(.primary)
+                                } icon: {
+                                    Image(systemName: "app.badge")
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                Spacer()
+                                
+                                Text(defaultUPIApp)
+                                    .foregroundColor(.gray)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .accessibilityLabel("Default UPI App")
+                        .accessibilityHint("Select your preferred UPI payment app.")
+                        .accessibilityValue(defaultUPIApp)
+                    }
                 }
                 
                 // MARK: - Appearance Settings
@@ -185,6 +231,9 @@ struct SettingsView: View {
             .sheet(isPresented: $showThemeOptions) {
                 ThemeSelectionView(selectedTheme: $themeMode)
             }
+            .sheet(isPresented: $showUPIAppOptions) {
+                UPIAppSelectionView(selectedApp: $defaultUPIApp)
+            }
         }
         .onAppear { applyTheme() }
         .onChange(of: themeMode) {
@@ -213,6 +262,8 @@ struct SettingsView: View {
         vibrationEnabled = true
         themeMode = "Device"
         autoOpenLinks = false
+        autoOpenUPI = false
+        defaultUPIApp = "None"
         
         // Apply theme after reset
         applyTheme()
@@ -276,5 +327,80 @@ struct ThemeSelectionView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - UPI App Selection View
+struct UPIAppSelectionView: View {
+    @Binding var selectedApp: String
+    @Environment(\.dismiss) private var dismiss
+    
+    let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(upiAppOptions, id: \.self) { app in
+                    Button {
+                        selectedApp = app
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: app == "None" ? "xmark.circle" : "app.badge")
+                                .font(.title3)
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.primary)
+                            
+                            VStack(alignment: .leading) {
+                                Text(app)
+                                    .font(.headline)
+                                
+                                if app == "None" {
+                                    Text("Show all payment apps")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            if selectedApp == app {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .navigationTitle("Select UPI App")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            
+            // Note about authorization and feedback
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Note:")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                    
+                    Text("You will need to authorize Scan to open your selected UPI app only for the first time.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                    
+                    Text("If your payment app is not listed, please leave feedback so we can add it.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                .padding()
+            }
+        }
     }
 }
