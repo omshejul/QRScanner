@@ -14,10 +14,12 @@ struct SettingsView: View {
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("autoOpenUPI") private var autoOpenUPI = false
     @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
+    @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = false
     
     @State private var showResetConfirmation = false
     @State private var showThemeOptions = false
     @State private var showUPIAppOptions = false
+    @State private var showOnboarding = false
     
     let themeOptions = ["Device", "Light", "Dark"]
     let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
@@ -136,6 +138,24 @@ struct SettingsView: View {
                     .accessibilityValue(themeMode)
                 }
                 
+                // MARK: - App Features
+                Section(header: Text("App Features")) {
+                    Button {
+                        // Show onboarding using the local sheet
+                        showOnboarding = true
+                    } label: {
+                        Label {
+                            Text("Replay Onboarding")
+                                .foregroundColor(.primary)
+                        } icon: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .accessibilityLabel("Replay Onboarding")
+                    .accessibilityHint("Tap to view the app's onboarding tutorial again.")
+                }
+                
                 // MARK: - Data Management
                 Section {
                     Button(role: .destructive) {
@@ -234,6 +254,9 @@ struct SettingsView: View {
             .sheet(isPresented: $showUPIAppOptions) {
                 UPIAppSelectionView(selectedApp: $defaultUPIApp)
             }
+            .sheet(isPresented: $showOnboarding) {
+                OnboardingView(isOnboardingRemaining: $isOnboardingRemaining)
+            }
         }
         .onAppear { applyTheme() }
         .onChange(of: themeMode) {
@@ -264,6 +287,7 @@ struct SettingsView: View {
         autoOpenLinks = false
         autoOpenUPI = false
         defaultUPIApp = "None"
+        isOnboardingRemaining = true // Reset onboarding state
         
         // Apply theme after reset
         applyTheme()

@@ -11,6 +11,7 @@ import AVFoundation
 struct QRCodeScannerView: UIViewControllerRepresentable {
     var completion: (String, AVMetadataObject.ObjectType) -> Void
     var selectedDevice: AVCaptureDevice?
+    var shouldInitializeScanner: Bool = true
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -20,12 +21,21 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
         let scannerViewController = ScannerViewController()
         scannerViewController.delegate = context.coordinator
         scannerViewController.selectedDevice = selectedDevice
+        scannerViewController.shouldInitializeScanner = shouldInitializeScanner
         return scannerViewController
     }
     
     func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {
         if uiViewController.selectedDevice?.uniqueID != selectedDevice?.uniqueID {
             uiViewController.switchCamera(to: selectedDevice)
+        }
+        
+        if uiViewController.shouldInitializeScanner != shouldInitializeScanner {
+            uiViewController.shouldInitializeScanner = shouldInitializeScanner
+            
+            if shouldInitializeScanner && uiViewController.captureSession == nil {
+                uiViewController.setupScanner()
+            }
         }
     }
     
@@ -54,12 +64,16 @@ class ScannerViewController: UIViewController {
     var previewLayer: AVCaptureVideoPreviewLayer?
     weak var delegate: AVCaptureMetadataOutputObjectsDelegate?
     var selectedDevice: AVCaptureDevice?
+    var shouldInitializeScanner: Bool = true
     
     private var videoCaptureDevice: AVCaptureDevice?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupScanner()
+        
+        if shouldInitializeScanner {
+            setupScanner()
+        }
         
         // ✅ Listen for Scan Completion to Stop Camera
         NotificationCenter.default.addObserver(self, selector: #selector(stopScanning), name: NSNotification.Name("StopScanning"), object: nil)

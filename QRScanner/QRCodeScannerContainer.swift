@@ -38,6 +38,8 @@ struct QRCodeScannerContainer: View {
     @State private var isShowingPhotoPicker = false
     @State private var isScanning = false
     @State private var showNoCodeFound = false
+    @State private var showCameraPermissionRequest = false // Default to false, will be set based on permission status
+    @State private var shouldInitializeScanner = false // Don't initialize scanner until permission granted
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
@@ -66,6 +68,13 @@ struct QRCodeScannerContainer: View {
         if let defaultCamera = backSession.devices.first {
             self._selectedLens = State(initialValue: defaultCamera)
         }
+        
+        // Check camera permission status
+        let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        // Initialize state variables based on permission status
+        self._showCameraPermissionRequest = State(initialValue: authStatus == .notDetermined)
+        self._shouldInitializeScanner = State(initialValue: authStatus == .authorized)
     }
     
     var body: some View {
@@ -82,7 +91,7 @@ struct QRCodeScannerContainer: View {
                         
                         // Auto-open HTTPS links if enabled
                         detectAndOpenURL(from: code)
-                    }, selectedDevice: selectedLens)
+                    }, selectedDevice: selectedLens, shouldInitializeScanner: shouldInitializeScanner)
                     .edgesIgnoringSafeArea(.all)
                     
                     // ✅ Scanner Overlay with L-Shaped Corners
@@ -143,6 +152,49 @@ struct QRCodeScannerContainer: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     }
                 }
+                
+                // Camera Permission Request Overlay
+                if showCameraPermissionRequest {
+                    ZStack {
+                        Color.black.opacity(0.7)
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        VStack(spacing: 20) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.white)
+                            
+                            Text("Scan needs camera permission to scan codes")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                            
+                            Button(action: {
+                                showCameraPermissionRequest = false
+                                shouldInitializeScanner = true // Now initialize the scanner
+                                // This will trigger the system permission dialog when the scanner tries to access the camera
+                            }) {
+                                Text("OK")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(width: 120, height: 44)
+                                    .background(Color.blue)
+                                    .cornerRadius(10)
+                            }
+                        }
+                        .padding(30)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                        .shadow(radius: 10)
+                        .padding(.horizontal, 40)
+                    }
+                    .transition(.opacity)
+                }
             }
             .navigationDestination(isPresented: $isShowingResult) {
                 if let code = scannedCode, let type = scannedType {
@@ -181,6 +233,18 @@ struct QRCodeScannerContainer: View {
             .onAppear {
                 // Check and update flashlight state when view appears
                 updateFlashlightState()
+                
+                // Double-check permission status when view appears
+                if !shouldInitializeScanner && !showCameraPermissionRequest {
+                    let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
+                    if authStatus == .authorized {
+                        // If permission is already granted but scanner not initialized, initialize it
+                        shouldInitializeScanner = true
+                    } else if authStatus == .notDetermined {
+                        // If permission not determined, show the custom dialog
+                        showCameraPermissionRequest = true
+                    }
+                }
             }
         }
         .navigationBarHidden(true)
