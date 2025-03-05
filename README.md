@@ -1,5 +1,5 @@
 # QRScanner
-
+## I know the app structure is not good, it was literally my first app i made for learning swiftui
 ## Project Description
 QRScanner is an iOS application designed to scan and generate QR codes. It provides a user-friendly interface for scanning QR codes and creating various types of QR codes, such as web URLs, WiFi credentials, text, contacts, and emails.
 
