@@ -12,40 +12,25 @@ import WidgetKit
 struct ScanWidgetControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "com.omshejul.scanner.ScanWidget",
-            provider: Provider()
-        ) { value in
-            ControlWidgetToggle(
-                "Start Timer",
-                isOn: value,
-                action: StartTimerIntent()
+            kind: "com.omshejul.ControlCenterWidget.CCWidget"
+        ) {
+            ControlWidgetButton(
+                "Launch App",
+                action: OpenAppIntent()
             ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+                Label("Scan", systemImage: "qrcode.viewfinder")
             }
         }
-        .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .displayName("Open Scan")
+        .description("Quickly open the Scan app from Control Center.")
     }
 }
 
-extension ScanWidgetControl {
-    struct Provider: ControlValueProvider {
-        var previewValue: Bool {
-            false
-        }
 
-        func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
-            return isRunning
-        }
-    }
-}
+struct OpenAppIntent: AppIntent {
+    static var title: LocalizedStringResource = "Open the App"
 
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
-
-    @Parameter(title: "Timer is running")
-    var value: Bool
+    static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
         // Start / stop the timer based on `value`.

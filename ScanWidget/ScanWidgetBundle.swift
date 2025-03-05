@@ -11,7 +11,7 @@ import SwiftUI
 @main
 struct ScanWidgetBundle: WidgetBundle {
     var body: some Widget {
-        ScanWidget()
+        // ScanWidget()
         ScanWidgetControl()
     }
 }
