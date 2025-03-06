@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "lightv24.png",
+      "filename" : "lightv25.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "darkv24.png",
+      "filename" : "darkv25.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
