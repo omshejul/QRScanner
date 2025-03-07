@@ -399,7 +399,7 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
@@ -437,7 +437,7 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
