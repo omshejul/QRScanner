@@ -194,6 +194,12 @@ struct QRCodeGeneratorView: View {
                     NavigationLink(destination: SocialQRCodeView(platform: "Spotify", templateURL: "https://open.spotify.com/user/", inputPlaceholder: "Enter Spotify Username", exampleInput: "spotifyuser123")) {
                         QRCodeOptionRowSocial(imageName: "spotify", title: "Spotify")
                     }
+                    NavigationLink(destination: SocialQRCodeView(platform: "Reddit", templateURL: "https://www.reddit.com/user/", inputPlaceholder: "Enter Reddit Username", exampleInput: "reddit_user")) {
+                        QRCodeOptionRowSocial(imageName: "reddit", title: "Reddit")
+                    }
+                    NavigationLink(destination: SocialQRCodeView(platform: "Discord", templateURL: "https://discord.com/users/", inputPlaceholder: "Enter Discord User ID", exampleInput: "123456789012345678")) {
+                        QRCodeOptionRowSocial(imageName: "discord", title: "Discord")
+                    }
                     
                 }
             }
