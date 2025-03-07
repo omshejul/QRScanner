@@ -21,6 +21,7 @@ struct QRCodeScannerContainer: View {
     @State private var isShowingResult = false
     @State private var flashlightEnabled = false
     @State private var overlayScale: CGFloat = 1.0
+    @State private var dropZoneScale: CGFloat = 1.0 // New state for drop zone animation
     @State private var showCameraSelector = false
     @State private var backCameras: [AVCaptureDevice] = []
     @State private var frontCameras: [AVCaptureDevice] = []
@@ -44,6 +45,7 @@ struct QRCodeScannerContainer: View {
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
+    @State private var isDropTargeted = false // New state to track when an image is being dragged over
     
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     
@@ -121,18 +123,72 @@ struct QRCodeScannerContainer: View {
                         }
                         .frame(width: scanBoxSize, height: scanBoxSize)
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 3)
+                        .overlay(
+                            // Drop zone overlay that appears ONLY when an image is being dragged over
+                            ZStack {
+                                // Only show elements when an image is being dragged
+                                if isDropTargeted {
+                                    // Background fill
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(.ultraThinMaterial)
+                                    
+                                    // Animated border
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(
+                                            Color(UIColor.systemGray), 
+                                            style: StrokeStyle(lineWidth: 1, dash: [8, 4])
+                                        )  
+                                        .scaleEffect(dropZoneScale)
+                                    
+                                    // Inner content
+                                    VStack(spacing: 12) {
+                                        Image(systemName: "arrow.down.doc.fill")
+                                            .font(.system(size: 40, weight: .medium))
+                                            .foregroundColor(.blue)
+                                            .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+                                        
+                                        Text("Drop to Scan")
+                                            .font(.headline)
+                                            .foregroundColor(.blue)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                Capsule()
+                                                    .fill(.ultraThinMaterial)
+                                            )
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color(UIColor.systemGray), lineWidth: 1)
+                                            )
+                                    }
+                                    .transition(.opacity.combined(with: .scale))
+                                }
+                            }
+                                .position(x: proxy.size.width / 2, y: proxy.size.height / 3)
+                                .animation(.easeInOut(duration: 0.3), value: isDropTargeted)
+                        )
                         .imageDropDestination(isTargeted: { isTargeted in
+                            // Update the isDropTargeted state
+                            isDropTargeted = isTargeted
+                            
                             if isTargeted {
-                                // Optional: Add visual feedback when an image is being dragged over
+                                // Start pulsing animation for drop zone
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     overlayScale = 1.2
+                                }
+                                
+                                // Create pulsing animation for the drop zone border
+                                withAnimation(Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                                    dropZoneScale = 1.05
                                 }
                             } else {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     overlayScale = 1.1
+                                    dropZoneScale = 1.0
                                 }
                             }
                         }, onDrop: { image in
+                            isDropTargeted = false // Reset the drop target state
                             processPickedImage(image)
                             return true
                         })
@@ -141,33 +197,33 @@ struct QRCodeScannerContainer: View {
                     
                     // Add hint text for drag and drop
                     if showDragDropHint {
-                    HStack(spacing: 8) {
-                        Text("Scan a code or drop an image here")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))                            
+                        HStack(spacing: 8) {
+                            Text("Scan a code or drop an image here")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.8))                            
                             // .padding(.vertical, 8)
-                            .padding(.leading, 12)
-                        Button(action: {
-                            Haptic.soft()
-                            showDragDropHint = false
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12))
-                                .foregroundColor(.white.opacity(0.8))
-                                .padding(8)
-                                .background(Color.black.opacity(0.2))
-                                .cornerRadius(99)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                )
+                                .padding(.leading, 12)
+                            Button(action: {
+                                Haptic.soft()
+                                showDragDropHint = false
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.2))
+                                    .cornerRadius(99)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                            }
                         }
-                    }
-                    .frame(alignment: .center)
-                    .padding(4)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(99)
-                    .offset(y: scanBoxSize / 2 + 50)
+                        .frame(alignment: .center)
+                        .padding(4)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(99)
+                        .offset(y: scanBoxSize / 2 + 50)
                     }
                     
                     // Camera Controls
