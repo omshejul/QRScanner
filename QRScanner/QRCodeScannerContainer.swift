@@ -43,6 +43,7 @@ struct QRCodeScannerContainer: View {
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
+    @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
     
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     
@@ -120,8 +121,54 @@ struct QRCodeScannerContainer: View {
                         }
                         .frame(width: scanBoxSize, height: scanBoxSize)
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 3)
+                        .imageDropDestination(isTargeted: { isTargeted in
+                            if isTargeted {
+                                // Optional: Add visual feedback when an image is being dragged over
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    overlayScale = 1.2
+                                }
+                            } else {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    overlayScale = 1.1
+                                }
+                            }
+                        }, onDrop: { image in
+                            processPickedImage(image)
+                            return true
+                        })
                     }
                     .frame(width: scanBoxSize, height: scanBoxSize)
+                    
+                    // Add hint text for drag and drop
+                    if showDragDropHint {
+                    HStack(spacing: 8) {
+                        Text("Scan a code or drop an image here")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))                            
+                            // .padding(.vertical, 8)
+                            .padding(.leading, 12)
+                        Button(action: {
+                            Haptic.soft()
+                            showDragDropHint = false
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.8))
+                                .padding(8)
+                                .background(Color.black.opacity(0.2))
+                                .cornerRadius(99)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                )
+                        }
+                    }
+                    .frame(alignment: .center)
+                    .padding(4)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(99)
+                    .offset(y: scanBoxSize / 2 + 50)
+                    }
                     
                     // Camera Controls
                     GeometryReader { proxy in
@@ -524,8 +571,8 @@ struct QRCodeScannerContainer: View {
         
         // First try standard URL detection
         if let url = URL(string: text),
-            url.scheme?.lowercased() == "https",
-            UIApplication.shared.canOpenURL(url) {
+           url.scheme?.lowercased() == "https",
+           UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
             return
         }
@@ -1036,5 +1083,19 @@ private struct NoCodeFoundOverlay: View {
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
         .animation(AppAnimations.viewTransition, value: true)
+    }
+}
+
+// MARK: - URL Drop Extension
+extension View {
+    func imageDropDestination(isTargeted: @escaping (Bool) -> Void, onDrop: @escaping (UIImage) -> Bool) -> some View {
+        self.dropDestination(for: Data.self) { items, _ in
+            guard let item = items.first else { return false }
+            
+            if let uiImage = UIImage(data: item) {
+                return onDrop(uiImage)
+            }
+            return false
+        } isTargeted: { isTargeted($0) }
     }
 }

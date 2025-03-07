@@ -15,7 +15,8 @@ struct SettingsView: View {
     @AppStorage("autoOpenUPI") private var autoOpenUPI = false
     @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = false
-    
+    @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
+
     @State private var showResetConfirmation = false
     @State private var showThemeOptions = false
     @State private var showUPIAppOptions = false
@@ -288,6 +289,7 @@ struct SettingsView: View {
         autoOpenUPI = false
         defaultUPIApp = "None"
         isOnboardingRemaining = true // Reset onboarding state
+        showDragDropHint = true
         
         // Apply theme after reset
         applyTheme()
