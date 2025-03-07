@@ -40,6 +40,16 @@ struct ScanResultView: View {
                         .scaledToFit()
                         .frame(maxWidth: 300)
                         .padding()
+                        .onDrag {
+                            // Generate a high-quality QR code for dragging (same as for sharing)
+                            let isDark = getCurrentThemeMode()
+                            if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark, size: 1024) {
+                                // Create a provider with the high-res image
+                                return NSItemProvider(object: image)
+                            }
+                            // Fallback to empty provider if image generation fails
+                            return NSItemProvider()
+                        }
                 } else if let barcode = generatedBarcode {
                     Image(uiImage: barcode)
                         .resizable()
@@ -50,6 +60,66 @@ struct ScanResultView: View {
                         .background(Color.white)
                         .cornerRadius(16)
                         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        .onDrag {
+                            // Create a high-res version of the barcode for dragging
+                            // Determine optimal size based on barcode type
+                            let size: CGSize
+                            switch barcodeType {
+                            case .aztec:
+                                size = CGSize(width: 1024, height: 1024)
+                            case .pdf417:
+                                size = CGSize(width: 1536, height: 1024)
+                            case .ean8, .upce:
+                                size = CGSize(width: 1536, height: 512)
+                            case .ean13:
+                                size = CGSize(width: 2048, height: 512)
+                            case .code128, .code93:
+                                size = CGSize(width: 2048, height: 512)
+                            case .code39, .code39Mod43:
+                                size = CGSize(width: 2560, height: 512)
+                            case .itf14, .interleaved2of5:
+                                size = CGSize(width: 2560, height: 512)
+                            default:
+                                size = CGSize(width: 2048, height: 512)
+                            }
+                            
+                            // Create high-res image
+                            UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
+                            UIColor.white.setFill()
+                            UIRectFill(CGRect(origin: .zero, size: size))
+                            
+                            let originalAspect = barcode.size.width / barcode.size.height
+                            let horizontalPadding: CGFloat = 64
+                            let targetAspect = (size.width - (2 * horizontalPadding)) / size.height
+                            
+                            let drawRect: CGRect
+                            if originalAspect > targetAspect {
+                                let width = size.width - (2 * horizontalPadding)
+                                let height = width / originalAspect
+                                let y = (size.height - height) / 2
+                                drawRect = CGRect(x: horizontalPadding, y: y, width: width, height: height)
+                            } else {
+                                let height = size.height
+                                let width = height * originalAspect
+                                let x = (size.width - width) / 2
+                                drawRect = CGRect(x: x, y: 0, width: width, height: height)
+                            }
+                            
+                            let context = UIGraphicsGetCurrentContext()
+                            context?.interpolationQuality = .none
+                            context?.setShouldAntialias(false)
+                            barcode.draw(in: drawRect)
+                            
+                            if let highQualityImage = UIGraphicsGetCurrentContext()?.makeImage() {
+                                let highResBarcode = UIImage(cgImage: highQualityImage)
+                                UIGraphicsEndImageContext()
+                                return NSItemProvider(object: highResBarcode)
+                            }
+                            
+                            UIGraphicsEndImageContext()
+                            // Fallback to original barcode if high-res creation fails
+                            return NSItemProvider(object: barcode)
+                        }
                 }
                 
                 // Link Preview for URLs

@@ -135,9 +135,9 @@ struct QRCodeScannerContainer: View {
                                     // Animated border
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(
-                                            Color(UIColor.systemGray), 
+                                            Color(UIColor.systemGray),
                                             style: StrokeStyle(lineWidth: 1, dash: [8, 4])
-                                        )  
+                                        )
                                         .scaleEffect(dropZoneScale)
                                     
                                     // Inner content
@@ -200,7 +200,7 @@ struct QRCodeScannerContainer: View {
                         HStack(spacing: 8) {
                             Text("Scan a code or drop an image here")
                                 .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))                            
+                                .foregroundColor(.white.opacity(0.8))
                             // .padding(.vertical, 8)
                                 .padding(.leading, 12)
                             Button(action: {
