@@ -12,6 +12,7 @@ import RSBarcodes_Swift
 import LinkPresentation
 import Contacts
 import ContactsUI
+import NetworkExtension
 //import URLDetectorUtility
 
 struct ScanResultView: View {
@@ -609,6 +610,13 @@ struct ActionButtonsView: View {
                         }
                     
                     let wifiPassword = components["P"] ?? "No Password Found"
+                    let wifiSSID = components["S"] ?? "Unknown Network"
+                    
+                    ActionButton(icon: "wifi", text: "Connect to Wi-Fi") {
+                        connectToWiFi(ssid: wifiSSID, passphrase: wifiPassword)
+                        onDismiss()
+                    }
+                    Divider()
                     
                     ActionButton(icon: "doc.on.doc", text: "Copy WiFi Password") {
                         UIPasteboard.general.string = wifiPassword
@@ -1391,4 +1399,130 @@ func openUPILink(_ upiLink: String, with app: String) {
     if let url = URL(string: urlString) {
         UIApplication.shared.open(url, options: [:]) { _ in }
     }
+}
+
+// Helper function to connect to Wi-Fi
+func connectToWiFi(ssid: String, passphrase: String) {
+    // Check if running on simulator
+    #if targetEnvironment(simulator)
+    showToast(message: "Wi-Fi connection not available in simulator")
+    return
+    #endif
+    
+    let configuration = NEHotspotConfiguration(ssid: ssid, passphrase: passphrase, isWEP: false)
+    configuration.joinOnce = false // Allow persistent connection
+
+    showToast(message: "Attempting to connect to \(ssid)...")
+    
+    NEHotspotConfigurationManager.shared.apply(configuration) { error in
+        if let error = error {
+            if error.localizedDescription.contains("already associated") {
+                print("Already connected to \(ssid).")
+                showToast(message: "Already connected to \(ssid)")
+            } else if error.localizedDescription.contains("missing entitlement") {
+                print("Missing Hotspot Configuration entitlement")
+                showToast(message: "Missing required app permissions. Please enable Hotspot Configuration capability in Xcode.")
+            } else {
+                // For all other errors
+                print("Error connecting to Wi-Fi: \(error.localizedDescription)")
+                
+                let errorMessage: String
+                if error.localizedDescription.contains("internal error") {
+                    errorMessage = "Could not connect to Wi-Fi. Please verify the Hotspot Configuration capability is enabled."
+                } else if passphrase.isEmpty {
+                    errorMessage = "Could not connect: Password required"
+                } else if passphrase.count < 8 {
+                    errorMessage = "Could not connect: Password too short"
+                } else {
+                    errorMessage = "Could not connect to Wi-Fi: \(error.localizedDescription)"
+                }
+                
+                showToast(message: errorMessage)
+            }
+        } else {
+            // Connection attempt completed - check if we can verify the connection
+            // Note: iOS doesn't provide a reliable programmatic way to check the current Wi-Fi SSID
+            // due to privacy restrictions, so we'll just be more cautious in our messaging
+            print("Connection attempt to \(ssid) completed without errors")
+            showToast(message: "Connection request sent to \(ssid)")
+            
+            // Display a follow-up message after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                showToast(message: "Please check your Wi-Fi settings to confirm connection")
+            }
+        }
+    }
+}
+
+// Helper function to show toast message
+func showToast(message: String) {
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+          let window = windowScene.windows.first
+    else { return }
+    
+    let toastContainer = UIView(frame: CGRect(x: 0, y: 0, width: 280, height: 50))
+    
+    // Create blur effect background like system toast
+    let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+    let blurView = UIVisualEffectView(effect: blurEffect)
+    blurView.frame = toastContainer.bounds
+    blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    blurView.layer.cornerRadius = 10
+    blurView.clipsToBounds = true
+    toastContainer.addSubview(blurView)
+    
+    // Add a subtle border
+    toastContainer.layer.cornerRadius = 10
+    toastContainer.layer.borderWidth = 0.5
+    toastContainer.layer.borderColor = UIColor.gray.withAlphaComponent(0.2).cgColor
+    
+    // Configure message label
+    let messageLabel = UILabel()
+    messageLabel.textColor = .label
+    messageLabel.textAlignment = .center
+    messageLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+    messageLabel.text = message
+    messageLabel.numberOfLines = 0
+    
+    // Add label to vibrancy effect for better readability
+    let vibrancyEffect = UIVibrancyEffect(blurEffect: blurEffect)
+    let vibrancyView = UIVisualEffectView(effect: vibrancyEffect)
+    vibrancyView.frame = blurView.bounds
+    vibrancyView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    blurView.contentView.addSubview(vibrancyView)
+    
+    messageLabel.translatesAutoresizingMaskIntoConstraints = false
+    vibrancyView.contentView.addSubview(messageLabel)
+    
+    NSLayoutConstraint.activate([
+        messageLabel.leadingAnchor.constraint(equalTo: vibrancyView.leadingAnchor, constant: 10),
+        messageLabel.trailingAnchor.constraint(equalTo: vibrancyView.trailingAnchor, constant: -10),
+        messageLabel.topAnchor.constraint(equalTo: vibrancyView.topAnchor, constant: 10),
+        messageLabel.bottomAnchor.constraint(equalTo: vibrancyView.bottomAnchor, constant: -10)
+    ])
+    
+    window.addSubview(toastContainer)
+    
+    // Position at bottom like system toast
+    toastContainer.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+        toastContainer.centerXAnchor.constraint(equalTo: window.centerXAnchor),
+        toastContainer.bottomAnchor.constraint(equalTo: window.safeAreaLayoutGuide.bottomAnchor, constant: -50),
+        toastContainer.widthAnchor.constraint(lessThanOrEqualToConstant: 280)
+    ])
+    
+    toastContainer.alpha = 0
+    
+    // Animate like system toast
+    UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
+        toastContainer.alpha = 1
+        toastContainer.transform = CGAffineTransform(translationX: 0, y: -10)
+    }, completion: { _ in
+        UIView.animate(withDuration: 0.3, delay: 2, options: .curveEaseIn, animations: {
+            toastContainer.alpha = 0
+            toastContainer.transform = CGAffineTransform(translationX: 0, y: 10)
+        }, completion: { _ in
+            toastContainer.removeFromSuperview()
+        })
+    })
 }
