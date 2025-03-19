@@ -278,7 +278,7 @@ struct QRCodeScannerContainer: View {
                                 shouldInitializeScanner = true // Now initialize the scanner
                                 // This will trigger the system permission dialog when the scanner tries to access the camera
                             }) {
-                                Text("OK")
+                                Text("Continue")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .frame(width: 120, height: 44)

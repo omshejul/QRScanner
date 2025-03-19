@@ -819,7 +819,7 @@ struct ActionButtonsView: View {
             preferredStyle: .alert
         )
         
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: "Continue", style: .default))
         
         // Present the alert
         if #available(iOS 15.0, *) {
