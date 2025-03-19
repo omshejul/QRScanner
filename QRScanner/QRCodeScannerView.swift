@@ -67,6 +67,7 @@ class ScannerViewController: UIViewController {
     var shouldInitializeScanner: Bool = true
     
     private var videoCaptureDevice: AVCaptureDevice?
+    private var longPressGesture: UILongPressGestureRecognizer!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -75,9 +76,107 @@ class ScannerViewController: UIViewController {
             setupScanner()
         }
         
+        // Add long press gesture for pasting images
+        setupLongPressGesture()
+        
         // ✅ Listen for Scan Completion to Stop Camera
         NotificationCenter.default.addObserver(self, selector: #selector(stopScanning), name: NSNotification.Name("StopScanning"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(startScanning), name: NSNotification.Name("StartScanning"), object: nil)
+    }
+    
+    private func setupLongPressGesture() {
+        longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+        longPressGesture.minimumPressDuration = 0.5
+        view.addGestureRecognizer(longPressGesture)
+    }
+    
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        if gesture.state == .began {
+            showPasteImageAlert()
+        }
+    }
+    
+    private func showPasteImageAlert() {
+        let alertController = UIAlertController(
+            title: "Paste Image",
+            message: "Paste an image to scan for codes",
+            preferredStyle: .actionSheet
+        )
+        
+        alertController.addAction(UIAlertAction(title: "Paste from Clipboard", style: .default) { [weak self] _ in
+            self?.pasteImageFromClipboard()
+        })
+        
+        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        present(alertController, animated: true)
+    }
+    
+    private func pasteImageFromClipboard() {
+        guard UIPasteboard.general.hasImages, let image = UIPasteboard.general.image else {
+            let alert = UIAlertController(
+                title: "No Image",
+                message: "No image found in clipboard",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        // Stop the camera temporarily
+        stopScanning()
+        
+        // Process the image to find codes
+        processImageForCodes(image)
+    }
+    
+    private func processImageForCodes(_ image: UIImage) {
+        guard let ciImage = CIImage(image: image) else {
+            resumeScanning()
+            return
+        }
+        
+        let detector = CIDetector(ofType: CIDetectorTypeQRCode, context: nil, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
+        guard let features = detector?.features(in: ciImage) as? [CIQRCodeFeature] else {
+            resumeScanning()
+            return
+        }
+        
+        if features.isEmpty {
+            // No codes found, show message
+            let alert = UIAlertController(
+                title: "No Codes Found",
+                message: "No QR or barcodes were detected in the image",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+                self?.resumeScanning()
+            })
+            present(alert, animated: true)
+            return
+        }
+        
+        // Process the first detected code
+        if let feature = features.first, let messageString = feature.messageString {
+            // Call the delegate with the scanned data
+            DispatchQueue.main.async {
+                // Create a mock AVMetadataMachineReadableCodeObject type
+                let objectType = AVMetadataObject.ObjectType.qr
+                
+                // Call the parent completion handler
+                if let coordinator = self.delegate as? QRCodeScannerView.Coordinator {
+                    coordinator.parent.completion(messageString, objectType)
+                }
+            }
+        } else {
+            resumeScanning()
+        }
+    }
+    
+    private func resumeScanning() {
+        // Resume camera scanning
+        startScanning()
     }
     
     func setupScanner() {
