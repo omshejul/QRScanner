@@ -174,7 +174,8 @@ struct ScanResultView: View {
                     generatedBarcode: generatedBarcode,
                     extractedURLs: extractedURLs,
                     formattedURLString: formattedURLString,
-                    isURL: isURL
+                    isURL: isURL,
+                    onDismiss: onDismiss
                 )
                 
                 Spacer()
@@ -351,6 +352,7 @@ struct ActionButtonsView: View {
     let extractedURLs: [URL]
     let formattedURLString: String
     let isURL: Bool
+    let onDismiss: () -> Void
     @State private var isCopied = false
     @State private var isSharingData = false
     @State private var isSharingQR = false
@@ -421,18 +423,21 @@ struct ActionButtonsView: View {
                         // Direct HTTP URL
                         ActionButton(icon: "safari", text: "Open in Safari") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                     } else if isURL, let url = URL(string: formattedURLString), URLDetectorUtility.shared.isValidWebLink(formattedURLString) {
                         // Valid web link detected by URLDetectorUtility
                         ActionButton(icon: "safari", text: "Open in Safari") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                     } else if !extractedURLs.isEmpty, let firstURL = extractedURLs.first, URLDetectorUtility.shared.isValidWebLink(firstURL.absoluteString) {
                         // URL extracted from text
                         ActionButton(icon: "safari", text: "Open URL in Safari") {
                             UIApplication.shared.open(firstURL)
+                            onDismiss()
                         }
                         Divider()
                         
@@ -442,6 +447,7 @@ struct ActionButtonsView: View {
                                 if let encodedQuery = host.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                                    let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
                                     UIApplication.shared.open(url)
+                                    onDismiss()
                                 }
                             }
                             Divider()
@@ -459,6 +465,7 @@ struct ActionButtonsView: View {
                         ActionButton(icon: "apple.logo", text: "Open in Apple Maps") {
                             let url = URL(string: "https://maps.apple.com/?q=\(lat),\(lon)")!
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                         
@@ -466,6 +473,7 @@ struct ActionButtonsView: View {
                         ActionButton(icon: "map", text: "Open in Google Maps") {
                             let url = URL(string: "https://www.google.com/maps?q=\(lat),\(lon)")!
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                         
@@ -473,6 +481,7 @@ struct ActionButtonsView: View {
                         ActionButton(icon: "car", text: "Open in Waze") {
                             let url = URL(string: "https://waze.com/ul?ll=\(lat),\(lon)")!
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                         
@@ -480,6 +489,7 @@ struct ActionButtonsView: View {
                         ActionButton(icon: "safari", text: "Open in Safari") {
                             let url = URL(string: "https://www.google.com/search?q=\(lat),\(lon)")!
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                         Divider()
                     }
@@ -507,6 +517,7 @@ struct ActionButtonsView: View {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -515,6 +526,7 @@ struct ActionButtonsView: View {
                 if scannedText.lowercased().starts(with: "upi://pay") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
                         showUPIAppSelection(for: scannedText)
+                        onDismiss()
                     }
                     .onAppear {
                         // Check if auto-open is enabled and a default app is set
@@ -524,6 +536,7 @@ struct ActionButtonsView: View {
                            defaultApp != "None" {
                             // Open directly with the default app
                             openUPILink(scannedText, with: defaultApp)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -532,6 +545,7 @@ struct ActionButtonsView: View {
                 if scannedText.lowercased().starts(with: "mailto:") || scannedText.starts(with: "MATMSG:") {
                     ActionButton(icon: "envelope", text: "Send Email") {
                         openMATMSGEmail(scannedText)
+                        onDismiss()
                     }
                     Divider()
                 }
@@ -540,6 +554,7 @@ struct ActionButtonsView: View {
                     ActionButton(icon: "phone", text: "Call") {
                         if let url = URL(string: scannedText) {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -570,10 +585,12 @@ struct ActionButtonsView: View {
                         
                         if let url = URL(string: formattedSMS) {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         } else {
                             // Fallback for compatibility
                             if let url = URL(string: scannedText) {
                                 UIApplication.shared.open(url)
+                                onDismiss()
                             }
                         }
                     }
@@ -611,6 +628,7 @@ struct ActionButtonsView: View {
                     ActionButton(icon: "cart", text: "Search on Amazon.\(getAmazonDomain().split(separator: ".").last ?? "com")") {
                         if let url = getAmazonSearchURL(for: scannedText) {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -619,6 +637,7 @@ struct ActionButtonsView: View {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -627,6 +646,7 @@ struct ActionButtonsView: View {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://www.barcodelookup.com/\(encodedQuery)") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -634,6 +654,7 @@ struct ActionButtonsView: View {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://go-upc.com/search?q=/\(encodedQuery)") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
@@ -641,6 +662,7 @@ struct ActionButtonsView: View {
                         if let encodedQuery = scannedText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                            let url = URL(string: "https://www.gs1.org/services/verified-by-gs1/results?gtin=\(encodedQuery)") {
                             UIApplication.shared.open(url)
+                            onDismiss()
                         }
                     }
                     Divider()
