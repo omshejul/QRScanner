@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVFoundation
+import Vision
 
 struct QRCodeScannerView: UIViewControllerRepresentable {
     var completion: (String, AVMetadataObject.ObjectType) -> Void
@@ -82,6 +83,9 @@ class ScannerViewController: UIViewController {
         // ✅ Listen for Scan Completion to Stop Camera
         NotificationCenter.default.addObserver(self, selector: #selector(stopScanning), name: NSNotification.Name("StopScanning"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(startScanning), name: NSNotification.Name("StartScanning"), object: nil)
+        
+        // Listen for return to scanner notification
+        NotificationCenter.default.addObserver(self, selector: #selector(startScanning), name: NSNotification.Name("ReturnToScanner"), object: nil)
     }
     
     private func setupLongPressGesture() {
@@ -133,32 +137,17 @@ class ScannerViewController: UIViewController {
     
     private func processImageForCodes(_ image: UIImage) {
         guard let ciImage = CIImage(image: image) else {
+            showAlert(title: "Error", message: "Could not process the image")
             resumeScanning()
             return
         }
         
-        let detector = CIDetector(ofType: CIDetectorTypeQRCode, context: nil, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
-        guard let features = detector?.features(in: ciImage) as? [CIQRCodeFeature] else {
-            resumeScanning()
-            return
-        }
+        // Try QR codes first with CIDetector
+        let qrDetector = CIDetector(ofType: CIDetectorTypeQRCode, context: nil, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
+        let features = qrDetector?.features(in: ciImage) as? [CIQRCodeFeature]
         
-        if features.isEmpty {
-            // No codes found, show message
-            let alert = UIAlertController(
-                title: "No Codes Found",
-                message: "No QR or barcodes were detected in the image",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
-                self?.resumeScanning()
-            })
-            present(alert, animated: true)
-            return
-        }
-        
-        // Process the first detected code
-        if let feature = features.first, let messageString = feature.messageString {
+        // Process QR code features if found
+        if let features = features, !features.isEmpty, let feature = features.first, let messageString = feature.messageString {
             // Call the delegate with the scanned data
             DispatchQueue.main.async {
                 // Create a mock AVMetadataMachineReadableCodeObject type
@@ -169,9 +158,108 @@ class ScannerViewController: UIViewController {
                     coordinator.parent.completion(messageString, objectType)
                 }
             }
-        } else {
-            resumeScanning()
+            return
         }
+        
+        // If no QR code found, try barcode detection with Vision framework
+        detectBarcodesWithVision(in: image)
+    }
+    
+    private func detectBarcodesWithVision(in image: UIImage) {
+        // Convert to CG image
+        guard let cgImage = image.cgImage else {
+            resumeScanning()
+            return
+        }
+        
+        // Create Vision barcode detection request
+        let barcodeRequest = VNDetectBarcodesRequest()
+        
+        // Process the image
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        
+        do {
+            // Perform the barcode detection request
+            try handler.perform([barcodeRequest])
+            
+            // Process results
+            if let results = barcodeRequest.results, !results.isEmpty {
+                // Get all detected barcodes
+                let barcodes = results.compactMap { result -> (String, String)? in
+                    guard let barcode = result as? VNBarcodeObservation,
+                          let payload = barcode.payloadStringValue else { return nil }
+                    return (payload, barcode.symbology.rawValue)
+                }
+                
+                // Use the first detected barcode
+                if let firstBarcode = barcodes.first {
+                    let barcodeValue = firstBarcode.0
+                    let barcodeType = mapVisionBarcodeTypeToAVType(firstBarcode.1)
+                    
+                    DispatchQueue.main.async {
+                        // Call the parent completion handler
+                        if let coordinator = self.delegate as? QRCodeScannerView.Coordinator {
+                            coordinator.parent.completion(barcodeValue, barcodeType)
+                        }
+                    }
+                    return
+                }
+            }
+            
+            // If we get here, no codes were found
+            DispatchQueue.main.async {
+                self.showAlert(title: "No Codes Found", message: "No QR or barcodes were detected in the image")
+                self.resumeScanning()
+            }
+            
+        } catch {
+            DispatchQueue.main.async {
+                self.showAlert(title: "Error", message: "Failed to process the image: \(error.localizedDescription)")
+                self.resumeScanning()
+            }
+        }
+    }
+    
+    // Helper method to map Vision barcode types to AVMetadataObject types
+    private func mapVisionBarcodeTypeToAVType(_ visionType: String) -> AVMetadataObject.ObjectType {
+        switch visionType {
+        case "VNBarcodeSymbologyQR":
+            return .qr
+        case "VNBarcodeSymbologyEAN13":
+            return .ean13
+        case "VNBarcodeSymbologyEAN8":
+            return .ean8
+        case "VNBarcodeSymbologyPDF417":
+            return .pdf417
+        case "VNBarcodeSymbologyAztec":
+            return .aztec
+        case "VNBarcodeSymbologyCode128":
+            return .code128
+        case "VNBarcodeSymbologyCode39":
+            return .code39
+        case "VNBarcodeSymbologyCode93":
+            return .code93
+        case "VNBarcodeSymbologyDataMatrix":
+            return .dataMatrix
+        case "VNBarcodeSymbologyITF14":
+            return .itf14
+        case "VNBarcodeSymbologyUPCE":
+            return .upce
+        default:
+            return .qr
+        }
+    }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(
+            title: title,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            self?.resumeScanning()
+        })
+        present(alert, animated: true)
     }
     
     private func resumeScanning() {
@@ -182,6 +270,7 @@ class ScannerViewController: UIViewController {
     func setupScanner() {
         DispatchQueue.global(qos: .userInitiated).async {
             let session = AVCaptureSession()
+            session.sessionPreset = .high // Higher resolution for better barcode detection
             
             // Use the selected device or fall back to default
             let videoDevice = self.selectedDevice ?? AVCaptureDevice.default(for: .video)
@@ -192,31 +281,52 @@ class ScannerViewController: UIViewController {
             do {
                 videoInput = try AVCaptureDeviceInput(device: device)
             } catch {
+                print("Error creating AVCaptureDeviceInput: \(error.localizedDescription)")
                 return
             }
             
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
+            } else {
+                print("Could not add video input to session")
+                return
             }
             
             let metadataOutput = AVCaptureMetadataOutput()
             if session.canAddOutput(metadataOutput) {
                 session.addOutput(metadataOutput)
+                
+                // The order here is important - add output to session first, then set metadata types
                 metadataOutput.setMetadataObjectsDelegate(self.delegate, queue: DispatchQueue.main)
-                metadataOutput.metadataObjectTypes = [
-                    .qr,
-                    .ean13,
-                    .ean8,
-                    .pdf417,
-                    .aztec,
-                    .code128,
-                    .code39,
-                    .code93,
-                    .dataMatrix,
-                    .interleaved2of5,
-                    .itf14,
-                    .upce
-                ]
+                
+                // Get all available metadata object types
+                let availableMetadataTypes = metadataOutput.availableMetadataObjectTypes
+                
+                // Set all available barcode types
+                metadataOutput.metadataObjectTypes = availableMetadataTypes.filter { type in
+                    return [
+                        .qr,
+                        .ean13,
+                        .ean8,
+                        .pdf417,
+                        .aztec,
+                        .code128,
+                        .code39,
+                        .code93,
+                        .dataMatrix,
+                        .interleaved2of5,
+                        .itf14,
+                        .upce,
+                        .codabar,
+                        .code39Mod43,
+                        .microQR
+                    ].contains(type)
+                }
+                
+                print("Enabled metadata types: \(metadataOutput.metadataObjectTypes)")
+            } else {
+                print("Could not add metadata output to session")
+                return
             }
             
             DispatchQueue.main.async {
