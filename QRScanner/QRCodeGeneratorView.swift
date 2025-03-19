@@ -331,6 +331,15 @@ struct SocialQRCodeView: View {
                         .animation(QRAnimationConfig.opacityAnimation, value: qrCodeOpacity)
                         .blur(radius: qrCodeBlur)
                         .animation(QRAnimationConfig.blurAnimation, value: qrCodeBlur)
+                        .onDrag {
+                            // Generate a high-quality QR code for dragging
+                            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: getCurrentThemeMode(), size: 1024) {
+                                // Create a provider with the high-res image
+                                return NSItemProvider(object: image)
+                            }
+                            // Fallback to original image if high-res generation fails
+                            return NSItemProvider(object: qrImage)
+                        }
                     
                     // ✅ Share QR Button
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {

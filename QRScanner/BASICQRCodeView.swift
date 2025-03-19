@@ -275,7 +275,7 @@ struct BASICQRCodeView: View {
                 }
                 
                 if let qrImage = qrImage {
-                    QRCodeImageView(qrImage: qrImage)
+                    QRCodeImageView(qrImage: qrImage, qrString: generateQRString())
                     // Share QR Button
                     
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
@@ -648,6 +648,7 @@ struct ContactFields: View {
 // MARK: - QR Code Image View
 struct QRCodeImageView: View {
     let qrImage: UIImage
+    var qrString: String? = nil  // Optional QR string for high-quality generation
     @State private var isSharing = false
     @State private var qrCodeScale: CGFloat = QRAnimationConfig.initialScale
     @State private var qrCodeOpacity: Double = QRAnimationConfig.initialOpacity
@@ -668,6 +669,20 @@ struct QRCodeImageView: View {
                 .blur(radius: qrCodeBlur)
                 .animation(QRAnimationConfig.blurAnimation, value: qrCodeBlur)
                 .padding(.horizontal)
+                .onDrag {
+                    // Get the current theme mode
+                    let isDark = getCurrentThemeMode()
+                    
+                    // If we have the QR string, generate a high-quality QR code
+                    if let qrString = qrString, !qrString.isEmpty {
+                        if let image = generateQRCodeImage(from: qrString, isDarkMode: isDark, size: 1024) {
+                            return NSItemProvider(object: image)
+                        }
+                    }
+                    
+                    // Fallback to original image if no string or generation fails
+                    return NSItemProvider(object: qrImage)
+                }
                 .sheet(isPresented: $isSharing) {
                     ShareSheet(activityItems: [qrImage])
                 }

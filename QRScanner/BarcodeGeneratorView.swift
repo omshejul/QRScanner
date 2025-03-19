@@ -122,6 +122,66 @@ struct BarcodeGeneratorView: View {
                             .animation(QRAnimationConfig.opacityAnimation, value: barcodeOpacity)
                             .blur(radius: barcodeBlur)
                             .animation(QRAnimationConfig.blurAnimation, value: barcodeBlur)
+                            .onDrag {
+                                // Create a high-res version of the barcode for dragging
+                                // Determine optimal size based on barcode type
+                                let size: CGSize
+                                switch type {
+                                case .aztec:
+                                    size = CGSize(width: 1024, height: 1024)
+                                case .pdf417:
+                                    size = CGSize(width: 1536, height: 1024)
+                                case .ean8, .upce:
+                                    size = CGSize(width: 1536, height: 512)
+                                case .ean13, .isbn13, .issn13:
+                                    size = CGSize(width: 2048, height: 512)
+                                case .code128, .code93:
+                                    size = CGSize(width: 2048, height: 512)
+                                case .code39, .code39Mod43, .extendedCode39:
+                                    size = CGSize(width: 2560, height: 512)
+                                case .itf14, .interleaved2of5:
+                                    size = CGSize(width: 2560, height: 512)
+                                default:
+                                    size = CGSize(width: 2048, height: 512)
+                                }
+                                
+                                // Create high-res image
+                                UIGraphicsBeginImageContextWithOptions(size, true, 0.0)
+                                UIColor.white.setFill()
+                                UIRectFill(CGRect(origin: .zero, size: size))
+                                
+                                let originalAspect = barcode.size.width / barcode.size.height
+                                let horizontalPadding: CGFloat = 64
+                                let targetAspect = (size.width - (2 * horizontalPadding)) / size.height
+                                
+                                let drawRect: CGRect
+                                if originalAspect > targetAspect {
+                                    let width = size.width - (2 * horizontalPadding)
+                                    let height = width / originalAspect
+                                    let y = (size.height - height) / 2
+                                    drawRect = CGRect(x: horizontalPadding, y: y, width: width, height: height)
+                                } else {
+                                    let height = size.height
+                                    let width = height * originalAspect
+                                    let x = (size.width - width) / 2
+                                    drawRect = CGRect(x: x, y: 0, width: width, height: height)
+                                }
+                                
+                                let context = UIGraphicsGetCurrentContext()
+                                context?.interpolationQuality = .none
+                                context?.setShouldAntialias(false)
+                                barcode.draw(in: drawRect)
+                                
+                                if let highQualityImage = UIGraphicsGetCurrentContext()?.makeImage() {
+                                    let highResBarcode = UIImage(cgImage: highQualityImage)
+                                    UIGraphicsEndImageContext()
+                                    return NSItemProvider(object: highResBarcode)
+                                }
+                                
+                                UIGraphicsEndImageContext()
+                                // Fallback to original barcode if high-res creation fails
+                                return NSItemProvider(object: barcode)
+                            }
                         
                         ActionButtonCenter(
                             icon: "square.and.arrow.up",

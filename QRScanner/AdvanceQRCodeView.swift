@@ -53,7 +53,7 @@ struct AdvanceQRCodeView: View {
                 }
                 
                 if let qrImage = qrImage {
-                    QRCodeImageView(qrImage: qrImage)
+                    QRCodeImageView(qrImage: qrImage, qrString: generateQRString())
                     
                     ActionButtonCenter(icon: "square.and.arrow.up", text: isGeneratingQR ? "Please Wait..." : "Share QR Code") {
                         if !isGeneratingQR {
