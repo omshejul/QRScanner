@@ -399,7 +399,7 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
@@ -419,7 +419,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -438,7 +438,7 @@
 				CODE_SIGN_ENTITLEMENTS = QRScanner/QRScanner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
@@ -458,7 +458,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -475,7 +475,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScanWidget/Info.plist;
@@ -487,7 +487,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner.ScanWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -504,7 +504,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = M4K84L4TKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScanWidget/Info.plist;
@@ -516,7 +516,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.10;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.omshejul.scanner.ScanWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

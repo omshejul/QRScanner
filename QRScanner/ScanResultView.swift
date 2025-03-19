@@ -168,6 +168,11 @@ struct ScanResultView: View {
                     SectionView(title: "TYPE", content: determineQRType(from: scannedText, type: barcodeType))
                 }
                 
+                // UPI Details Expandable View
+                if scannedText.lowercased().starts(with: "upi://pay") {
+                    UPIDetailView(upiString: scannedText)
+                }
+                
                 // Action Buttons
                 ActionButtonsView(
                     scannedText: scannedText, 
@@ -344,6 +349,446 @@ struct SectionView: View {
     }
 }
 
+// MARK: - UPI Details Expandable View
+struct UPIDetailView: View {
+    let upiString: String
+    @State private var isExpanded = false
+    @State private var copiedParam: String? = nil
+    @State private var stableOrderedParams: [(key: String, value: String)] = []
+    
+    // Parse UPI parameters
+    private var upiParams: [String: String] {
+        guard upiString.hasPrefix("upi://pay?") else { return [:] }
+        
+        // Extract query parameters
+        let queryString = upiString.replacingOccurrences(of: "upi://pay?", with: "")
+        let pairs = queryString.components(separatedBy: "&")
+        
+        // Build dictionary
+        var params = [String: String]()
+        for pair in pairs {
+            let components = pair.components(separatedBy: "=")
+            if components.count == 2 {
+                let key = components[0]
+                let value = components[1].removingPercentEncoding ?? components[1]
+                params[key] = value
+            }
+        }
+        
+        return params
+    }
+    
+    private var parameterLabels: [String: String] {
+        return [
+            "pa": "UPI ID",
+            "pn": "Payee Name",
+            "am": "Amount",
+            "cu": "Currency",
+            "tn": "Note",
+            "tr": "Transaction Ref",
+            "mc": "Merchant Code",
+            "tid": "Transaction ID",
+            "url": "URL",
+            "refUrl": "Reference URL"
+        ]
+    }
+    
+    private var parameterIcons: [String: String] {
+        return [
+            "pa": "person.crop.circle",
+            "pn": "person.text.rectangle",
+            "am": "indianrupeesign",
+            "cu": "dollarsign.circle",
+            "tn": "text.bubble",
+            "tr": "number",
+            "mc": "bag.circle",
+            "tid": "number.square",
+            "url": "link",
+            "refUrl": "arrow.up.right.square"
+        ]
+    }
+    
+    // Color scheme for the parameters
+    private func colorForParam(_ key: String) -> Color {
+        switch key {
+        case "pa":
+            return Color.blue
+        case "pn":
+            return Color.purple
+        case "am":
+            return Color.green
+        case "cu":
+            return Color.orange
+        case "tn":
+            return Color.teal
+        case "tr":
+            return Color.pink
+        case "mc":
+            return Color.indigo
+        case "tid":
+            return Color.gray
+        case "url", "refUrl":
+            return Color.blue
+        default:
+            return Color.secondary
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            UPIHeaderButton(
+                isExpanded: $isExpanded
+            )
+            
+            if isExpanded {
+                UPIDetailsContent(
+                    upiString: upiString,
+                    stableOrderedParams: stableOrderedParams,
+                    parameterIcons: parameterIcons,
+                    parameterLabels: parameterLabels,
+                    colorForParam: colorForParam,
+                    copiedParam: $copiedParam,
+                    formatValue: formatValue
+                )
+                .background(Color(UIColor.systemBackground))
+                .cornerRadius(10)
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                .padding(.horizontal)
+                .padding(.top, 5)
+                .padding(.bottom, 10)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity).animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.3)),
+                    removal: .opacity.animation(.easeOut(duration: 0.25))
+                ))
+                // Add blur animation
+                .blur(radius: isExpanded ? 0 : 10)
+                .animation(.easeOut(duration: 0.3), value: isExpanded)
+            }
+        }
+        .onAppear {
+            // Sort parameters once on appear and store in stable order
+            stableOrderedParams = upiParams.sorted { paramOrder($0.key) < paramOrder($1.key) }
+        }
+    }
+    
+    // Format values for display
+    private func formatValue(key: String, value: String) -> String {
+        switch key {
+        case "am":
+            if let amount = Double(value) {
+                let formatter = NumberFormatter()
+                formatter.numberStyle = .decimal
+                formatter.minimumFractionDigits = 2
+                formatter.maximumFractionDigits = 2
+                return formatter.string(from: NSNumber(value: amount)) ?? value
+            }
+            return value
+        case "cu":
+            // Format currency code
+            if value == "INR" {
+                return "₹ (Indian Rupee)"
+            }
+            return value
+        default:
+            return value
+        }
+    }
+    
+    // Helper to sort parameters in a logical order
+    private func paramOrder(_ key: String) -> Int {
+        let orderMap = [
+            "pa": 1,   // UPI ID first
+            "pn": 2,   // Name second
+            "am": 3,   // Amount third
+            "cu": 4,   // Currency fourth
+            "tn": 5,   // Note
+            "tr": 6,   // Transaction reference
+            "mc": 7,   // Merchant code
+            "tid": 8,  // Transaction ID
+            "url": 9,
+            "refUrl": 10
+        ]
+        
+        return orderMap[key] ?? 100 // Unknown keys at the end
+    }
+}
+
+// Header button for UPI Details
+struct UPIHeaderButton: View {
+    @Binding var isExpanded: Bool
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isExpanded.toggle()
+            }
+        }) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "indianrupeesign.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.system(size: 16, weight: .bold))
+                    
+                    Text("UPI PAYMENT DETAILS")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .textCase(.uppercase)
+                }
+                
+                Spacer()
+                
+                Text(isExpanded ? "Hide Details" : "View Details")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                
+                Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(UIColor.systemGray6))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal)
+    }
+}
+
+// Content view for UPI details when expanded
+struct UPIDetailsContent: View {
+    let upiString: String
+    let stableOrderedParams: [(key: String, value: String)]
+    let parameterIcons: [String: String]
+    let parameterLabels: [String: String]
+    let colorForParam: (String) -> Color
+    @Binding var copiedParam: String?
+    let formatValue: (String, String) -> String
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Payment Information")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 15)
+            .padding(.top, 15)
+            .padding(.bottom, 10)
+            
+            Divider()
+                .padding(.horizontal, 15)
+            
+            // Parameter rows
+            UPIParameterList(
+                stableOrderedParams: stableOrderedParams,
+                parameterIcons: parameterIcons,
+                parameterLabels: parameterLabels,
+                colorForParam: colorForParam,
+                copiedParam: $copiedParam,
+                formatValue: formatValue
+            )
+            
+            // Footer with schema info
+            UPIDetailsFooter(
+                upiString: upiString,
+                copiedParam: $copiedParam
+            )
+        }
+    }
+}
+
+// Parameter list view
+struct UPIParameterList: View {
+    let stableOrderedParams: [(key: String, value: String)]
+    let parameterIcons: [String: String]
+    let parameterLabels: [String: String]
+    let colorForParam: (String) -> Color
+    @Binding var copiedParam: String?
+    let formatValue: (String, String) -> String
+    
+    var body: some View {
+        ForEach(Array(stableOrderedParams.enumerated()), id: \.element.key) { index, param in
+            let key = param.key
+            let value = param.value
+            
+            UPIParameterRow(
+                key: key,
+                value: value,
+                icon: parameterIcons[key] ?? "circle",
+                label: parameterLabels[key] ?? key.uppercased(),
+                color: colorForParam(key),
+                copiedParam: $copiedParam,
+                formatValue: formatValue
+            )
+            
+            // Only show divider if not the last item
+            if index < stableOrderedParams.count - 1 {
+                Divider()
+                    .padding(.leading, 45)
+                    .padding(.trailing, 15)
+            }
+        }
+    }
+}
+
+// Single parameter row
+struct UPIParameterRow: View {
+    let key: String
+    let value: String
+    let icon: String
+    let label: String
+    let color: Color
+    @Binding var copiedParam: String?
+    let formatValue: (String, String) -> String
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center) {
+                // Icon
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
+                    .frame(width: 26, height: 26)
+                    .background(
+                        color.opacity(0.2)
+                    )
+                    .cornerRadius(6)
+                
+                // Label
+                Text(label)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Tappable value area
+                Button(action: {
+                    UIPasteboard.general.string = value
+                    copiedParam = key
+                    
+                    // Show haptic feedback
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    
+                    // Reset copied status after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        if copiedParam == key {
+                            copiedParam = nil
+                        }
+                    }
+                }) {
+                    HStack {
+                        Text(formatValue(key, value))
+                            .font(.system(size: 10, weight: .light))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(2)
+                            
+                        // Always show copy icon (for clarity that it's clickable)
+                        Image(systemName: copiedParam == key ? "checkmark.circle.fill" : "doc.on.doc")
+                            .font(.system(size: 8))
+                            .foregroundColor(copiedParam == key ? .green : .secondary)
+                            .opacity(0.8)
+                            .rotationEffect(copiedParam == key ? .degrees(360) : .degrees(0))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: copiedParam)
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(copiedParam == key ? 
+                                  Color.green.opacity(0.15) : 
+                                  Color(UIColor.systemGray5).opacity(0.7))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(copiedParam == key ? Color.green.opacity(0.5) : Color.clear, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
+            }
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
+        }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 0.9).combined(with: .opacity)
+        ))
+    }
+}
+
+// Footer view for UPI details
+struct UPIDetailsFooter: View {
+    let upiString: String
+    @Binding var copiedParam: String?
+    @State private var isUpiCopied = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Divider()
+                .padding(.horizontal, 15)
+            
+            HStack {
+                Text("UPI Schema")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Button(action: {
+                    UIPasteboard.general.string = upiString
+                    
+                    // Show haptic feedback
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    
+                    // Set copied state to true
+                    isUpiCopied = true
+                    
+                    // Reset copied status after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        isUpiCopied = false
+                    }
+                }) {
+                    HStack {
+                        Text(isUpiCopied ? "UPI URL Copied!" : "Copy Full UPI URL")
+                            .font(.caption)
+                            .foregroundColor(isUpiCopied ? .green : .blue)
+                        
+                        Image(systemName: isUpiCopied ? "checkmark.circle" : "link.circle")
+                            .font(.system(size: 12))
+                            .foregroundColor(isUpiCopied ? .green : .blue)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isUpiCopied ? 
+                                  Color.green.opacity(0.15) : 
+                                  Color.blue.opacity(0.1))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isUpiCopied ? Color.green.opacity(0.5) : Color.clear, lineWidth: 1)
+                    )
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isUpiCopied)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
+            }
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
+        }
+        .background(Color.blue.opacity(0.05))
+    }
+}
 
 // MARK: - Action Buttons with Additional Actions
 struct ActionButtonsView: View {
@@ -1515,7 +1960,7 @@ func showToast(message: String) {
     
     // Animate like system toast
     UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
-        toastContainer.alpha = 1
+        toastContainer.alpha = 1.0
         toastContainer.transform = CGAffineTransform(translationX: 0, y: -10)
     }, completion: { _ in
         UIView.animate(withDuration: 0.3, delay: 2, options: .curveEaseIn, animations: {
