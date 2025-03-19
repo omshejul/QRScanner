@@ -186,8 +186,8 @@ class ScannerViewController: UIViewController {
             if let results = barcodeRequest.results, !results.isEmpty {
                 // Get all detected barcodes
                 let barcodes = results.compactMap { result -> (String, String)? in
-                    guard let barcode = result as? VNBarcodeObservation,
-                          let payload = barcode.payloadStringValue else { return nil }
+                    let barcode = result 
+                    guard let payload = barcode.payloadStringValue else { return nil }
                     return (payload, barcode.symbology.rawValue)
                 }
                 
@@ -323,7 +323,7 @@ class ScannerViewController: UIViewController {
                     ].contains(type)
                 }
                 
-                print("Enabled metadata types: \(metadataOutput.metadataObjectTypes)")
+                print("Enabled metadata types: \(metadataOutput.metadataObjectTypes.map { $0.rawValue })")
             } else {
                 print("Could not add metadata output to session")
                 return
