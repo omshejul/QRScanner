@@ -57,8 +57,11 @@ struct HistoryView: View {
                                 ForEach(scanHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
                                     NavigationLink(
                                         destination: ScanResultView(
-                                            scannedText: item.text, barcodeType: item.type
-                                        ) {}
+                                            scannedText: item.text, 
+                                            barcodeType: item.type,
+                                            isFromHistory: true,
+                                            onDismiss: {}
+                                        )
                                     ) {
                                         HStack {
                                             if item.type == .aztec {
@@ -117,8 +120,11 @@ struct HistoryView: View {
                                 ForEach(createHistory.sorted(by: { $0.timestamp > $1.timestamp })) { item in
                                     NavigationLink(
                                         destination: ScanResultView(
-                                            scannedText: item.text, barcodeType: item.type
-                                        ) {}
+                                            scannedText: item.text, 
+                                            barcodeType: item.type,
+                                            isFromHistory: true,
+                                            onDismiss: {}
+                                        )
                                     ) {
                                         HStack {
                                             if item.type == .aztec {

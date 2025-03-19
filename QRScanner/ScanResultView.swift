@@ -19,6 +19,14 @@ struct ScanResultView: View {
     let scannedText: String
     let barcodeType: AVMetadataObject.ObjectType
     let onDismiss: () -> Void
+    let isFromHistory: Bool
+    
+    init(scannedText: String, barcodeType: AVMetadataObject.ObjectType, isFromHistory: Bool = false, onDismiss: @escaping () -> Void) {
+        self.scannedText = scannedText
+        self.barcodeType = barcodeType
+        self.isFromHistory = isFromHistory
+        self.onDismiss = onDismiss
+    }
     
     @State private var generatedBarcode: UIImage?
     @State private var isGeneratingQR = false
@@ -181,7 +189,8 @@ struct ScanResultView: View {
                     extractedURLs: extractedURLs,
                     formattedURLString: formattedURLString,
                     isURL: isURL,
-                    onDismiss: onDismiss
+                    onDismiss: onDismiss,
+                    isFromHistory: isFromHistory
                 )
                 
                 Spacer()
@@ -799,6 +808,7 @@ struct ActionButtonsView: View {
     let formattedURLString: String
     let isURL: Bool
     let onDismiss: () -> Void
+    let isFromHistory: Bool
     @State private var isCopied = false
     @State private var isSharingData = false
     @State private var isSharingQR = false
@@ -975,8 +985,9 @@ struct ActionButtonsView: View {
                         onDismiss()
                     }
                     .onAppear {
-                        // Check if auto-open is enabled and a default app is set
-                        if let autoOpenUPI = UserDefaults.standard.value(forKey: "autoOpenUPI") as? Bool,
+                        // Only auto-open UPI apps if not viewing from history
+                        if !isFromHistory,
+                           let autoOpenUPI = UserDefaults.standard.value(forKey: "autoOpenUPI") as? Bool,
                            autoOpenUPI,
                            let defaultApp = UserDefaults.standard.string(forKey: "defaultUPIApp"),
                            defaultApp != "None" {
