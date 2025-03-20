@@ -226,17 +226,17 @@ struct SettingsView: View {
                     .accessibilityLabel("Help and Feedback")
                     .accessibilityHint("Opens the email client to send feedback.")
                     
-                    Link(destination: URL(string: "https://buymeacoffee.com/omshejul")!) {
-                        Label {
-                            Text("Buy Me a Coffee")
-                        } icon: {
-                            Image(systemName: "cup.and.saucer")
-                                .foregroundStyle(.primary)
-                        }
-                    }
-                    .foregroundStyle(.primary)
-                    .accessibilityLabel("Buy Me a Coffee")
-                    .accessibilityHint("Opens the Buy Me a Coffee page to support the developer.")
+//                    Link(destination: URL(string: "https://buymeacoffee.com/omshejul")!) {
+//                        Label {
+//                            Text("Buy Me a Coffee")
+//                        } icon: {
+//                            Image(systemName: "cup.and.saucer")
+//                                .foregroundStyle(.primary)
+//                        }
+//                    }
+//                    .foregroundStyle(.primary)
+//                    .accessibilityLabel("Buy Me a Coffee")
+//                    .accessibilityHint("Opens the Buy Me a Coffee page to support the developer.")
 
                     // Link(destination: URL(string: "https://apps.apple.com/app/id123456789?action=write-review")!) {
                     //     Label {
