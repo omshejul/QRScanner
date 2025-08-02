@@ -1,2 +1,71 @@
+# App Store and documentation
 appstore.md
+
+# macOS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Xcode
+*.xcuserstate
+*.xcuserdata
+**/xcuserdata/**
+project.xcworkspace/xcuserdata/
+.xcode.env.local
+
+# Build products
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.resolved
+*.xcworkspace
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# Provisioning profiles
+*.mobileprovision
+*.provisionprofile
+
+# Certificate files
+*.p12
+*.cer
+
+# Temporary files
+*.tmp
+*.temp
+*~.nib
+
+# Archives
+*.zip
+*.tar.gz
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
