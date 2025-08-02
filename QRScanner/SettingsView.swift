@@ -26,6 +26,13 @@ struct SettingsView: View {
     let themeOptions = ["Device", "Light", "Dark"]
     let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
     
+    // Dynamic app version from Bundle
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        return "\(version) (\(build))"
+    }
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -194,7 +201,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("QR Scanner & Generator")
                             .font(.headline)
-                        Text("Version 1.0.0")
+                        Text("Version \(appVersion)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Text("Developed by Om Shejul")
@@ -203,7 +210,7 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 8)
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("QR Scanner & Generator, Version 1.0.0, Developed by Om Shejul")
+                    .accessibilityLabel("QR Scanner & Generator, Version \(appVersion), Developed by Om Shejul")
                     
                     Link(destination: URL(string: "https://omshejul.com")!) {
                         Label {
