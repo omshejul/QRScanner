@@ -13,6 +13,8 @@ import LinkPresentation
 import Contacts
 import ContactsUI
 import NetworkExtension
+import EventKit
+import EventKitUI
 //import URLDetectorUtility
 
 struct ScanResultView: View {
@@ -963,8 +965,10 @@ struct ActionButtonsView: View {
                     !scannedText.lowercased().starts(with: "smsto:") &&
                     !scannedText.lowercased().starts(with: "sms:") &&
                     !scannedText.lowercased().starts(with: "upi://") &&
+                    !scannedText.lowercased().starts(with: "fido:/") && // Passkey URLs
                     !scannedText.lowercased().contains("wifi:") &&
                     !scannedText.lowercased().contains("begin:vcard") &&
+                    !scannedText.lowercased().contains("begin:vevent") && // Calendar events
                     extractedURLs.isEmpty && // Don't show search if we already have URLs
                     !isURL { // Don't show search if the text itself is a URL
                     
@@ -974,6 +978,37 @@ struct ActionButtonsView: View {
                            let url = URL(string: "https://www.google.com/search?q=\(encodedQuery)") {
                             UIApplication.shared.open(url)
                             onDismiss()
+                        }
+                    }
+                    Divider()
+                }
+                
+                if scannedText.lowercased().starts(with: "fido:/") {
+                    ActionButton(icon: "key.horizontal", text: "Open Passkey Authentication") {
+                        if let url = URL(string: scannedText) {
+                            UIApplication.shared.open(url) { success in
+                                if success {
+                                    onDismiss()
+                                } else {
+                                    // Handle case where no app can handle passkey URLs
+                                    print("No app available to handle passkey URL: \(scannedText)")
+                                }
+                            }
+                        }
+                    }
+                    .onAppear {
+                        // Only auto-open passkey URLs if not viewing from history
+                        if !isFromHistory,
+                           let autoOpenPasskey = UserDefaults.standard.value(forKey: "autoOpenPasskey") as? Bool,
+                           autoOpenPasskey {
+                            // Auto-open passkey URL
+                            if let url = URL(string: scannedText) {
+                                UIApplication.shared.open(url) { success in
+                                    if success {
+                                        onDismiss()
+                                    }
+                                }
+                            }
                         }
                     }
                     Divider()
@@ -1083,6 +1118,13 @@ struct ActionButtonsView: View {
                 if scannedText.lowercased().contains("begin:vcard") {
                     ActionButton(icon: "person.crop.circle", text: "Save Contact") {
                         saveContact(scannedText)
+                    }
+                    Divider()
+                }
+                
+                if scannedText.lowercased().contains("begin:vevent") {
+                    ActionButton(icon: "calendar.badge.plus", text: "Add to Calendar") {
+                        showEventEditController(scannedText)
                     }
                     Divider()
                 }
@@ -1366,6 +1408,146 @@ class ContactViewControllerDelegate: NSObject, CNContactViewControllerDelegate {
     func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {
         viewController.dismiss(animated: true, completion: nil)
     }
+}
+
+// MARK: - Calendar Event Management (EventKitUI)
+
+// SwiftUI wrapper for EKEventEditViewController - no permissions needed!
+struct EventEditView: UIViewControllerRepresentable {
+    let event: EKEvent
+    let eventStore: EKEventStore
+    
+    func makeUIViewController(context: Context) -> EKEventEditViewController {
+        let editController = EKEventEditViewController()
+        editController.eventStore = eventStore
+        editController.event = event
+        editController.editViewDelegate = context.coordinator
+        return editController
+    }
+    
+    func updateUIViewController(_ uiViewController: EKEventEditViewController, context: Context) {
+        // No updates needed
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
+    class Coordinator: NSObject, EKEventEditViewDelegate {
+        func eventEditViewController(_ controller: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
+            controller.dismiss(animated: true) {
+                switch action {
+                case .saved:
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                    print("Calendar event saved successfully")
+                case .canceled:
+                    print("Calendar event creation canceled")
+                case .deleted:
+                    print("Calendar event deleted")
+                @unknown default:
+                    break
+                }
+            }
+        }
+    }
+}
+
+// Show event edit controller - no permissions required!
+func showEventEditController(_ eventString: String) {
+    let eventStore = EKEventStore()
+    
+    // Parse the VEVENT and create the event
+    guard let event = parseVEventSimple(eventString, eventStore: eventStore) else {
+        print("Failed to parse calendar event")
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.error)
+        return
+    }
+    
+    // Present using SwiftUI
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+       let window = windowScene.windows.first {
+        
+        let eventEditView = EventEditView(event: event, eventStore: eventStore)
+        let hostingController = UIHostingController(rootView: eventEditView)
+        
+        // Find the topmost presented view controller
+        var topController = window.rootViewController
+        while let presentedController = topController?.presentedViewController {
+            topController = presentedController
+        }
+        
+        topController?.present(hostingController, animated: true)
+    }
+}
+
+// Simple VEVENT parser - extracts key fields to prefill the event
+func parseVEventSimple(_ eventString: String, eventStore: EKEventStore) -> EKEvent? {
+    let event = EKEvent(eventStore: eventStore)
+    let lines = eventString.components(separatedBy: .newlines)
+    
+    // Date formatters for different VEVENT formats
+    let utcFormatter = DateFormatter()
+    utcFormatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+    utcFormatter.timeZone = TimeZone(abbreviation: "UTC")
+    
+    let localFormatter = DateFormatter()
+    localFormatter.dateFormat = "yyyyMMdd'T'HHmmss"
+    localFormatter.timeZone = TimeZone.current
+    
+    let dateOnlyFormatter = DateFormatter()
+    dateOnlyFormatter.dateFormat = "yyyyMMdd"
+    
+    for line in lines {
+        let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedLine.hasPrefix("SUMMARY:") {
+            event.title = String(trimmedLine.dropFirst(8))
+        } else if trimmedLine.hasPrefix("DESCRIPTION:") {
+            event.notes = String(trimmedLine.dropFirst(12))
+        } else if trimmedLine.hasPrefix("LOCATION:") {
+            event.location = String(trimmedLine.dropFirst(9))
+        } else if trimmedLine.hasPrefix("DTSTART") {
+            let dateString = extractDateValue(from: trimmedLine)
+            if let date = utcFormatter.date(from: dateString) ?? 
+                         localFormatter.date(from: dateString) ?? 
+                         dateOnlyFormatter.date(from: dateString) {
+                event.startDate = date
+            }
+        } else if trimmedLine.hasPrefix("DTEND") {
+            let dateString = extractDateValue(from: trimmedLine)
+            if let date = utcFormatter.date(from: dateString) ?? 
+                         localFormatter.date(from: dateString) ?? 
+                         dateOnlyFormatter.date(from: dateString) {
+                event.endDate = date
+            }
+        }
+    }
+    
+    // Validation - need at least a title
+    if event.title?.isEmpty != false {
+        event.title = "Calendar Event" // Default title
+    }
+    
+    // If no dates, set to current time + 1 hour
+    if event.startDate == nil {
+        event.startDate = Date()
+        event.endDate = Date().addingTimeInterval(3600)
+    } else if event.endDate == nil {
+        event.endDate = event.startDate?.addingTimeInterval(3600)
+    }
+    
+    return event
+}
+
+// Helper to extract date value from VEVENT property line
+func extractDateValue(from property: String) -> String {
+    // Handle formats like "DTSTART:20231225T120000Z" or "DTSTART;TZID=America/New_York:20231225T120000"
+    if let colonIndex = property.lastIndex(of: ":") {
+        return String(property[property.index(after: colonIndex)...])
+    }
+    return ""
 }
 
 // MARK: - Open Email (MATMSG Format)

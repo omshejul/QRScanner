@@ -625,6 +625,11 @@ struct QRCodeScannerContainer: View {
     private func detectAndOpenURL(from text: String) {
         guard autoOpenLinks else { return }
         
+        // Don't auto-open URLs if this is structured data (calendar events, contacts, etc.)
+        if isStructuredData(text) {
+            return
+        }
+        
         // First try standard URL detection
         if let url = URL(string: text),
            url.scheme?.lowercased() == "https",
@@ -675,6 +680,24 @@ struct QRCodeScannerContainer: View {
                 print("Error with regex pattern: \(error)")
             }
         }
+    }
+    
+    // MARK: - Structured Data Detection
+    private func isStructuredData(_ text: String) -> Bool {
+        let lowercasedText = text.lowercased()
+        
+        // Check for various structured data formats that shouldn't trigger URL auto-opening
+        return lowercasedText.contains("begin:vevent") ||    // Calendar events
+               lowercasedText.contains("begin:vcard") ||     // Contact cards
+               lowercasedText.contains("wifi:") ||           // WiFi configurations
+               lowercasedText.starts(with: "smsto:") ||      // SMS
+               lowercasedText.starts(with: "sms:") ||        // SMS
+               lowercasedText.starts(with: "tel:") ||        // Phone numbers
+               lowercasedText.starts(with: "mailto:") ||     // Email
+               lowercasedText.starts(with: "matmsg:") ||     // Email (MATMSG format)
+               lowercasedText.starts(with: "geo:") ||        // Geographic coordinates
+               lowercasedText.starts(with: "upi://") ||      // UPI payments
+               lowercasedText.starts(with: "fido:/")         // FIDO/Passkey authentication
     }
 }
 

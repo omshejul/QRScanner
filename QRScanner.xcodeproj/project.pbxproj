@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -26,14 +26,12 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		4BE380BA2D70AE5C00D224A7 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
 			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstSubfolder = PlugIns;
 			files = (
 				4B3DE5EA2D787A1400651EC4 /* ScanWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -91,20 +89,16 @@
 /* Begin PBXFrameworksBuildPhase section */
 		4B14187F2D634C2D0015B643 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				4B08D8E32D6DB12F00702DEC /* RSBarcodes_Swift in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4B3DE5D72D787A1300651EC4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				4B3DE5DD2D787A1300651EC4 /* SwiftUI.framework in Frameworks */,
 				4B3DE5DC2D787A1300651EC4 /* WidgetKit.framework in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -175,14 +169,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				4B3DE5DE2D787A1300651EC4 /* ScanWidget */,
 			);
 			name = ScanWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = ScanWidgetExtension;
 			productReference = 4B3DE5DA2D787A1300651EC4 /* ScanWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -195,7 +185,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					4B1418812D634C2D0015B643 = {
 						CreatedOnToolsVersion = 16.2;
@@ -217,7 +207,7 @@
 			packageReferences = (
 				4B08D8E12D6DB12F00702DEC /* XCRemoteSwiftPackageReference "RSBarcodes_Swift" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 4B1418832D634C2D0015B643 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -231,34 +221,26 @@
 /* Begin PBXResourcesBuildPhase section */
 		4B1418802D634C2D0015B643 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4B3DE5D82D787A1300651EC4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4B14187E2D634C2D0015B643 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4B3DE5D62D787A1300651EC4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -271,7 +253,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		4B14188E2D634C2F0015B643 /* Debug */ = {
+		4B14188E2D634C2F0015B643 /* Debug configuration for PBXProject "QRScanner" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -306,6 +288,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -334,7 +317,7 @@
 			};
 			name = Debug;
 		};
-		4B14188F2D634C2F0015B643 /* Release */ = {
+		4B14188F2D634C2F0015B643 /* Release configuration for PBXProject "QRScanner" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -369,6 +352,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -390,7 +374,7 @@
 			};
 			name = Release;
 		};
-		4B1418912D634C2F0015B643 /* Debug */ = {
+		4B1418912D634C2F0015B643 /* Debug configuration for PBXNativeTarget "QRScanner" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -401,7 +385,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
-				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = QRScanner/Info.plist;
@@ -414,7 +397,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -429,7 +412,7 @@
 			};
 			name = Debug;
 		};
-		4B1418922D634C2F0015B643 /* Release */ = {
+		4B1418922D634C2F0015B643 /* Release configuration for PBXNativeTarget "QRScanner" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -440,7 +423,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_ASSET_PATHS = "\"QRScanner/Preview Content\"";
-				DEVELOPMENT_TEAM = M4K84L4TKR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = QRScanner/Info.plist;
@@ -453,7 +435,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -468,7 +450,7 @@
 			};
 			name = Release;
 		};
-		4B3DE5EB2D787A1400651EC4 /* Debug */ = {
+		4B3DE5EB2D787A1400651EC4 /* Debug configuration for PBXNativeTarget "ScanWidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -476,12 +458,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 16;
-				DEVELOPMENT_TEAM = M4K84L4TKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScanWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScanWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -497,7 +478,7 @@
 			};
 			name = Debug;
 		};
-		4B3DE5EC2D787A1400651EC4 /* Release */ = {
+		4B3DE5EC2D787A1400651EC4 /* Release configuration for PBXNativeTarget "ScanWidgetExtension" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -505,12 +486,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 16;
-				DEVELOPMENT_TEAM = M4K84L4TKR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScanWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScanWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -532,28 +512,25 @@
 		4B14187D2D634C2D0015B643 /* Build configuration list for PBXProject "QRScanner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4B14188E2D634C2F0015B643 /* Debug */,
-				4B14188F2D634C2F0015B643 /* Release */,
+				4B14188E2D634C2F0015B643 /* Debug configuration for PBXProject "QRScanner" */,
+				4B14188F2D634C2F0015B643 /* Release configuration for PBXProject "QRScanner" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		4B1418902D634C2F0015B643 /* Build configuration list for PBXNativeTarget "QRScanner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4B1418912D634C2F0015B643 /* Debug */,
-				4B1418922D634C2F0015B643 /* Release */,
+				4B1418912D634C2F0015B643 /* Debug configuration for PBXNativeTarget "QRScanner" */,
+				4B1418922D634C2F0015B643 /* Release configuration for PBXNativeTarget "QRScanner" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		4B3DE5ED2D787A1400651EC4 /* Build configuration list for PBXNativeTarget "ScanWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4B3DE5EB2D787A1400651EC4 /* Debug */,
-				4B3DE5EC2D787A1400651EC4 /* Release */,
+				4B3DE5EB2D787A1400651EC4 /* Debug configuration for PBXNativeTarget "ScanWidgetExtension" */,
+				4B3DE5EC2D787A1400651EC4 /* Release configuration for PBXNativeTarget "ScanWidgetExtension" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
