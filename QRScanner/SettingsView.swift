@@ -14,7 +14,7 @@ struct SettingsView: View {
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("autoOpenUPI") private var autoOpenUPI = false
     @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
-    @AppStorage("autoOpenPasskey") private var autoOpenPasskey = false
+    @AppStorage("autoOpenPasskey") private var autoOpenPasskey = true
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = false
     @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
 
@@ -315,7 +315,7 @@ struct SettingsView: View {
         autoOpenLinks = false
         autoOpenUPI = false
         defaultUPIApp = "None"
-        autoOpenPasskey = false
+        autoOpenPasskey = true
         isOnboardingRemaining = true // Reset onboarding state
         showDragDropHint = true
         
