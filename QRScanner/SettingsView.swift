@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("autoOpenUPI") private var autoOpenUPI = false
     @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
+    @AppStorage("autoOpenPasskey") private var autoOpenPasskey = false
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = false
     @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
 
@@ -107,6 +108,20 @@ struct SettingsView: View {
                         .accessibilityHint("Select your preferred UPI payment app.")
                         .accessibilityValue(defaultUPIApp)
                     }
+                }
+                
+                // MARK: - Passkey Settings
+                Section(header: Text("Passkey Authentication"), footer: Text("Automatically open passkey and FIDO authentication URLs with compatible apps.")) {
+                    Toggle(isOn: $autoOpenPasskey) {
+                        Label {
+                            Text("Auto Open Passkey URLs")
+                        } icon: {
+                            Image(systemName: "key.horizontal")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .accessibilityLabel("Auto Open Passkey URLs")
+                    .accessibilityHint("Toggle to enable or disable automatic opening of passkey authentication URLs.")
                 }
                 
                 // MARK: - Appearance Settings
@@ -300,6 +315,7 @@ struct SettingsView: View {
         autoOpenLinks = false
         autoOpenUPI = false
         defaultUPIApp = "None"
+        autoOpenPasskey = false
         isOnboardingRemaining = true // Reset onboarding state
         showDragDropHint = true
         
