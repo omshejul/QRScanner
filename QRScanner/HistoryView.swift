@@ -44,6 +44,8 @@ struct HistoryView: View {
     @State private var createHistory: [CreateHistoryItem] = []
     @State private var isScanHistoryExpanded: Bool = true
     @State private var isCreateHistoryExpanded: Bool = true
+    @State private var isSharing: Bool = false
+    @State private var shareItems: [Any] = []
     
     var body: some View {
         NavigationView {
@@ -85,7 +87,33 @@ struct HistoryView: View {
                                                 .font(.caption)
                                                 .foregroundColor(.gray)
                                             }
-                                            .padding(.vertical, 2)
+                                            .padding(.vertical, 0)
+                                        }
+                                    }
+                                    .contextMenu {
+                                        Button(role: .none) {
+                                            UIPasteboard.general.string = item.text
+                                        } label: {
+                                            Label("Copy Data", systemImage: "doc.on.doc")
+                                        }
+                                        Button {
+                                            shareItems = [item.text]
+                                            isSharing = true
+                                        } label: {
+                                            Label("Share Data", systemImage: "square.and.arrow.up")
+                                        }
+                                        if URLDetectorUtility.shared.isValidWebLink(item.text) {
+                                            Button {
+                                                let formatted = URLDetectorUtility.shared.formatURLString(item.text)
+                                                if let url = URL(string: formatted) { UIApplication.shared.open(url) }
+                                            } label: {
+                                                Label("Open in Safari", systemImage: "safari")
+                                            }
+                                        }
+                                        Button(role: .destructive) {
+                                            deleteScanItem(item)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
                                         }
                                     }
                                 }
@@ -150,7 +178,33 @@ struct HistoryView: View {
                                                 .font(.caption)
                                                 .foregroundColor(.gray)
                                             }
-                                            .padding(.vertical, 2)
+                                            .padding(.vertical, 0)
+                                        }
+                                    }
+                                    .contextMenu {
+                                        Button(role: .none) {
+                                            UIPasteboard.general.string = item.text
+                                        } label: {
+                                            Label("Copy Data", systemImage: "doc.on.doc")
+                                        }
+                                        Button {
+                                            shareItems = [item.text]
+                                            isSharing = true
+                                        } label: {
+                                            Label("Share", systemImage: "square.and.arrow.up")
+                                        }
+                                        if URLDetectorUtility.shared.isValidWebLink(item.text) {
+                                            Button {
+                                                let formatted = URLDetectorUtility.shared.formatURLString(item.text)
+                                                if let url = URL(string: formatted) { UIApplication.shared.open(url) }
+                                            } label: {
+                                                Label("Open in Safari", systemImage: "safari")
+                                            }
+                                        }
+                                        Button(role: .destructive) {
+                                            deleteCreateItem(item)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
                                         }
                                     }
                                 }
@@ -212,6 +266,9 @@ struct HistoryView: View {
                         }
                     }
                 }
+            }
+            .sheet(isPresented: $isSharing) {
+                ShareSheet(activityItems: shareItems)
             }
         }
     }
@@ -455,6 +512,19 @@ struct HistoryView: View {
         scanHistory = scanHistory
     }
     
+    private func deleteScanItem(_ target: ScanHistoryItem) {
+        scanHistory.removeAll { $0.id == target.id }
+        let updatedHistory = scanHistory.map { item -> [String: Any] in
+            [
+                "text": item.text,
+                "type": item.type.rawValue,
+                "timestamp": item.timestamp
+            ]
+        }
+        UserDefaults.standard.setValue(updatedHistory, forKey: "scanHistory")
+        scanHistory = scanHistory
+    }
+
     private func deleteCreateHistoryItem(at offsets: IndexSet) {
         // Get the sorted items as they appear in the UI
         let sortedItems = createHistory.sorted(by: { $0.timestamp > $1.timestamp })
@@ -480,6 +550,20 @@ struct HistoryView: View {
         UserDefaults.standard.setValue(updatedHistory, forKey: "createHistory")
         
         // Force UI refresh by updating the @State variable
+        createHistory = createHistory
+    }
+
+    private func deleteCreateItem(_ target: CreateHistoryItem) {
+        createHistory.removeAll { $0.id == target.id }
+        let updated = createHistory.map { item -> [String: Any] in
+            [
+                "text": item.text,
+                "type": item.type.rawValue,
+                "timestamp": item.timestamp,
+                "displayType": item.displayType
+            ]
+        }
+        UserDefaults.standard.setValue(updated, forKey: "createHistory")
         createHistory = createHistory
     }
 }
