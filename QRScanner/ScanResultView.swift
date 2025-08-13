@@ -1202,9 +1202,7 @@ struct ActionButtonsView: View {
                                 isGeneratingQR = true
                                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                                    let window = windowScene.windows.first {
-                                    let isDark = window.overrideUserInterfaceStyle == .unspecified ?
-                                    UIScreen.main.traitCollection.userInterfaceStyle == .dark :
-                                    window.overrideUserInterfaceStyle == .dark
+                                    let isDark = window.traitCollection.userInterfaceStyle == .dark
                                     
                                     if let image = generateQRCodeImage(from: scannedText, isDarkMode: isDark) {
                                         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
