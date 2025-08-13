@@ -11,6 +11,8 @@ import SwiftUI
 struct QRScannerApp: App {
     @AppStorage("themeMode") private var themeMode = "Device" // Load stored theme
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = true
+	@Environment(\.scenePhase) private var scenePhase
+	@State private var obfuscateSnapshot = false
     
     init() {
         applyTheme() // ✅ Apply theme immediately on launch
@@ -18,11 +20,18 @@ struct QRScannerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ZStack {
+			ZStack {
                 TabBarView()
                     .onAppear {
                         applyTheme() // ✅ Ensure it updates when the app opens
                     }
+				
+				// Privacy overlay to prevent camera frames from appearing in snapshots/app switcher
+				if obfuscateSnapshot {
+					Rectangle()
+						.fill(.ultraThinMaterial)
+						.ignoresSafeArea()
+				}
             }
             .sheet(isPresented: $isOnboardingRemaining, onDismiss: {
                 // Ensure the flag is set to false when the sheet is dismissed
@@ -30,6 +39,9 @@ struct QRScannerApp: App {
             }) {
                 OnboardingView(isOnboardingRemaining: $isOnboardingRemaining)
             }
+			.onChange(of: scenePhase) { _, newPhase in
+				obfuscateSnapshot = newPhase != .active
+			}
         }
     }
     // MARK: - Apply Theme Based on Selection
