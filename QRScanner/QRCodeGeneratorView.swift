@@ -128,16 +128,19 @@ struct QRCodeGeneratorView: View {
                         NavigationLink(destination: BASICQRCodeView(type: type)) {
                             QRCodeOptionRow(icon: getSystemIcon(for: type), title: type.rawValue)
                         }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     }
                     ForEach(AdvanceQRType.allCases, id: \.rawValue) { type in
                         NavigationLink(destination: AdvanceQRCodeView(type: type)) {
                             QRCodeOptionRow(icon: getAdvancedIcon(for: type), title: type.rawValue)
                         }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     }
                     
                     NavigationLink(destination: BASICQRCodeView(type: .contact)) {
                         QRCodeOptionRow(icon: "person.crop.circle", title: "Contact")
                     }
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                 }
                 
                 // MARK: - Barcode Section
@@ -146,6 +149,7 @@ struct QRCodeGeneratorView: View {
                         NavigationLink(destination: BarcodeGeneratorView(type: type)) {
                             QRCodeOptionRow(icon: getBarcodeIcon(for: type), title: type.rawValue)
                         }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     }
                     // .padding(.vertical, 4)
                     
@@ -182,7 +186,7 @@ struct QRCodeGeneratorView: View {
                     NavigationLink(destination: SocialQRCodeView(platform: "TikTok", templateURL: "https://www.tiktok.com/@", inputPlaceholder: "Enter TikTok Username", exampleInput: "tiktok_user")) {
                         QRCodeOptionRowSocial(imageName: "tiktok", title: "TikTok")
                     }
-                    NavigationLink(destination: SocialQRCodeView(platform: "X", templateURL: "https://twitter.com/", inputPlaceholder: "Enter X (Twitter) Handle, with @", exampleInput: "@elonmusk")) {
+                    NavigationLink(destination: SocialQRCodeView(platform: "X", templateURL: "https://twitter.com/", inputPlaceholder: "Enter username with or without @ symbol", exampleInput: "@omshejul")) {
                         QRCodeOptionRowSocial(imageName: "twitter", title: "X")
                     }
                     NavigationLink(destination: SocialQRCodeView(platform: "Snapchat", templateURL: "https://www.snapchat.com/add/", inputPlaceholder: "Enter Snapchat Username", exampleInput: "snap_user")) {
@@ -223,7 +227,6 @@ struct QRCodeOptionRowSocial: View {
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading) // Aligns text properly
         }
-        .padding(.vertical, 4) // Adjusts row height
     }
 }
 
@@ -270,7 +273,6 @@ struct QRCodeOptionRow: View {
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading) // Pushes text left
         }
-        .padding(.vertical, 4) // Adjusts row height
     }
 }
 
@@ -307,11 +309,18 @@ struct SocialQRCodeView: View {
                         .cornerRadius(10)
                         .toolbar {
                             ToolbarItem(placement: .keyboard) {
-                                Button("Done") {
-                                    hideKeyboard()
+                                
+                                Button(action: { hideKeyboard() }) {
+                                    HStack() {
+                                        Text("Done")
+                                        Image(systemName: "keyboard.chevron.compact.down")
+                                    }
                                 }
+                                
+                                .padding(.horizontal)
                             }
                         }
+                        .padding(.bottom)
                     
                     Text("e.g., \(exampleInput)") // ✅ Example text
                         .font(.footnote)
@@ -333,7 +342,7 @@ struct SocialQRCodeView: View {
                         .animation(QRAnimationConfig.blurAnimation, value: qrCodeBlur)
                         .onDrag {
                             // Generate a high-quality QR code for dragging
-                            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: getCurrentThemeMode(), size: 1024) {
+                            if let image = generateQRCodeImage(from: templateURL + normalizeInput(username), isDarkMode: getCurrentThemeMode(), size: 1024) {
                                 // Create a provider with the high-res image
                                 return NSItemProvider(object: image)
                             }
@@ -371,7 +380,7 @@ struct SocialQRCodeView: View {
     // MARK: - Generate QR Code
     func generateQRCode() {
         hideKeyboard()
-        let fullURL = templateURL + username
+        let fullURL = templateURL + normalizeInput(username)
         
         // Reset animation states if regenerating
         if generatedQRCode != nil {
@@ -400,7 +409,7 @@ struct SocialQRCodeView: View {
     func generateQRCodeAndShare() {
         isQRReady = false
         DispatchQueue.global(qos: .userInitiated).async {
-            if let image = generateQRCodeImage(from: templateURL + username, isDarkMode: getCurrentThemeMode()) {
+            if let image = generateQRCodeImage(from: templateURL + normalizeInput(username), isDarkMode: getCurrentThemeMode()) {
                 let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("QRCode.png")
                 try? image.pngData()?.write(to: tempURL)
                 
@@ -420,6 +429,75 @@ struct SocialQRCodeView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Normalize user input to a clean handle/ID for each platform
+    private func normalizeInput(_ input: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "" }
+
+        // Helper to drop leading '@' and trailing '/'
+        func strip(_ s: String) -> String {
+            var result = s
+            if result.hasPrefix("@") { result.removeFirst() }
+            while result.last == "/" { result.removeLast() }
+            return result
+        }
+
+        // If it's a URL, parse and extract last relevant component depending on platform
+        if let url = URL(string: trimmed), let host = url.host?.lowercased(), host.contains(".") {
+            let pathComponents = url.pathComponents.filter { $0 != "/" }
+
+            func lastNonEmpty() -> String { strip(pathComponents.last ?? "") }
+
+            switch platform.lowercased() {
+            case "x", "twitter":
+                return lastNonEmpty()
+            case "instagram":
+                return lastNonEmpty()
+            case "facebook":
+                return lastNonEmpty()
+            case "tiktok":
+                return lastNonEmpty()
+            case "snapchat":
+                return lastNonEmpty()
+            case "telegram":
+                // t.me/<user>
+                return lastNonEmpty()
+            case "reddit":
+                // reddit.com/user/<name>
+                if let idx = pathComponents.firstIndex(of: "user"), idx + 1 < pathComponents.count {
+                    return strip(pathComponents[idx + 1])
+                }
+                return lastNonEmpty()
+            case "discord":
+                // discord.com/users/<id>
+                if let idx = pathComponents.firstIndex(of: "users"), idx + 1 < pathComponents.count {
+                    return strip(pathComponents[idx + 1])
+                }
+                return lastNonEmpty()
+            case "spotify":
+                // open.spotify.com/user/<name>
+                if let idx = pathComponents.firstIndex(of: "user"), idx + 1 < pathComponents.count {
+                    return strip(pathComponents[idx + 1])
+                }
+                return lastNonEmpty()
+            case "whatsapp":
+                // wa.me/<number> → keep + and digits only
+                let number = lastNonEmpty()
+                return String(number.filter { "+0123456789".contains($0) })
+            default:
+                return lastNonEmpty()
+            }
+        }
+
+        // Plain handle cases: '@user' or 'user'
+        let stripped = strip(trimmed)
+        if platform.lowercased() == "whatsapp" {
+            // Keep + and digits only
+            return String(stripped.filter { "+0123456789".contains($0) })
+        }
+        return stripped
     }
 }
 
