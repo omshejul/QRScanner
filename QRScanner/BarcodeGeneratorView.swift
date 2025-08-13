@@ -80,14 +80,15 @@ struct BarcodeGeneratorView: View {
                         )
                         .toolbar {
                             ToolbarItem(placement: .keyboard) {
-                                Button {
-                                    hideKeyboard()
-                                } label: {
-                                    HStack(spacing: 4) {
+                                
+                                Button(action: { hideKeyboard() }) {
+                                    HStack() {
                                         Text("Done")
                                         Image(systemName: "keyboard.chevron.compact.down")
                                     }
                                 }
+                                
+                                .padding(.horizontal)
                             }
                         }
                     

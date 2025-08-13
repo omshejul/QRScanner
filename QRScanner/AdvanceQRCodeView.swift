@@ -76,7 +76,15 @@ struct AdvanceQRCodeView: View {
             .padding(4)
             .toolbar {
                 ToolbarItem(placement: .keyboard) {
-                    Button("Done") { hideKeyboard() }
+                    
+                    Button(action: { hideKeyboard() }) {
+                        HStack() {
+                            Text("Done")
+                            Image(systemName: "keyboard.chevron.compact.down")
+                        }
+                    }
+                    
+                    .padding(.horizontal)
                 }
             }
         }
