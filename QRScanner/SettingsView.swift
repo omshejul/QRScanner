@@ -22,9 +22,11 @@ struct SettingsView: View {
     @State private var showThemeOptions = false
     @State private var showUPIAppOptions = false
     @State private var showOnboarding = false
+    @State private var isSharingApp = false
     
     let themeOptions = ["Device", "Light", "Dark"]
     let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+    private let appStoreURL = URL(string: "https://apps.apple.com/in/app/scan-qr-scanner-generator/id6742703637")!
     
     // Dynamic app version from Bundle
     private var appVersion: String {
@@ -224,6 +226,21 @@ struct SettingsView: View {
                     .accessibilityLabel("Visit Website")
                     .accessibilityHint("Opens the developer's website.")
 
+                    Button {
+                        isSharingApp = true
+                    } label: {
+                        Label {
+                            Text("Share App")
+                                .foregroundStyle(.primary)
+                        } icon: {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                    .tint(.primary)
+                    .accessibilityLabel("Share App")
+                    .accessibilityHint("Share Scan: QR Scanner Generator with friends.")
+
                     Link(destination: URL(string: "mailto:qrbugreport@omshejul.com?subject=Bug%20Report")!) {
                         Label {
                             Text("Report Bug")
@@ -291,6 +308,12 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showOnboarding) {
                 OnboardingView(isOnboardingRemaining: $isOnboardingRemaining)
+            }
+            .sheet(isPresented: $isSharingApp) {
+                ShareSheet(activityItems: [
+                    "Scan: QR Scanner Generator",
+                    appStoreURL
+                ])
             }
         }
         .onAppear { applyTheme() }

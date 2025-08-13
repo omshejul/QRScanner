@@ -862,18 +862,19 @@ private struct CameraLensButton: View {
                 if camera.position == .front {
                     Image(systemName: "person.fill")
                         .font(.system(size: 16))
-                        .foregroundColor(isSelected ? Color.yellow : .white)
+                        .foregroundColor(isSelected ? Color.yellow : .primary)
                 } else {
                     Text(magnificationText)
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(isSelected ? Color.yellow : .white)
+                        .foregroundColor(isSelected ? Color.yellow : .primary)
                 }
             }
             .frame(width: 40, height: 40)
             .background(
                 Circle()
-                    .fill(isSelected ? Color.black.opacity(0.2) : Color.clear)
+                    .fill(isSelected ? Color(UIColor.systemGray6) : Color.clear)
             )
+            .shadow(color: isSelected ? Color.black.opacity(0.1) : .clear, radius: 4, x: 0, y: 0)
             .scaleEffect(isSelected ? 1.2 : 1.0)
         }
     }
@@ -940,15 +941,7 @@ private struct CameraLensSelector: View {
                 // Spacer()
             }
             .padding(8)
-            .background(
-                RoundedRectangle(cornerRadius: 30)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 0)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 30)
-                    .fill(Color.black.opacity(0.15))
-            )
+            .glassEffect()
             .frame(height: 60)
             Spacer()
         }
@@ -976,7 +969,8 @@ private struct BottomControls: View {
                     .font(.system(size: 24))
                     .foregroundColor(.secondary)
                     .frame(width: 50, height: 50)
-                    .background(.thinMaterial)
+                    // .background(.thinMaterial)
+                    .glassEffect() 
                     .clipShape(Circle())
             }
             
@@ -987,7 +981,8 @@ private struct BottomControls: View {
                         .font(.system(size: 24))
                         .foregroundColor(flashlightEnabled ? Color.yellow : .secondary)
                         .frame(width: 50, height: 50)
-                        .background(flashlightEnabled ? .thickMaterial : .thinMaterial)
+                        // .background(flashlightEnabled ? .thickMaterial : .thinMaterial)
+                        .glassEffect(flashlightEnabled ? .regular.tint(Color.white.opacity(0.8)) : .regular.tint(Color.primary.opacity(0.0))) 
                         .clipShape(Circle())
                 }
             } else {
@@ -996,7 +991,7 @@ private struct BottomControls: View {
                         .font(.system(size: 24))
                         .foregroundColor(.secondary)
                         .frame(width: 50, height: 50)
-                        .background(.thinMaterial)
+                        .glassEffect(.regular.tint(Color.primary.opacity(0.7)))
                         .clipShape(Circle())
                 }
                 .disabled(true)
@@ -1079,7 +1074,7 @@ private struct ScanningOverlay: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(.thinMaterial)
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
@@ -1098,7 +1093,6 @@ private struct ScanningOverlay: View {
                     .padding(.horizontal)
             }
             .padding(30)
-            .background(.thinMaterial)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
         }
@@ -1113,7 +1107,7 @@ private struct NoCodeFoundOverlay: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(.thinMaterial)
                 .edgesIgnoringSafeArea(.all)
                 .onTapGesture {
                     dismissAction()
@@ -1123,7 +1117,7 @@ private struct NoCodeFoundOverlay: View {
                 Image(systemName: "qrcode.viewfinder")
                     .font(.system(size: 48))
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.primary)
                 
                 Text("No Code Found")
                     .font(.headline)
@@ -1142,20 +1136,17 @@ private struct NoCodeFoundOverlay: View {
                         .font(.headline)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 10)
-                        .background(Color.accentColor)
+                        // .background(Color.accentColor)
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                        .glassEffect(.regular.tint(Color.accentColor.opacity(0.7)))
                 }
                 .padding(.top, 4)
             }
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(.regularMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(.red.opacity(0.3), lineWidth: 1)
+                    .fill(.clear)
             )
             .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 3)
             .frame(maxWidth: 280)
