@@ -69,7 +69,9 @@ class ScannerViewController: UIViewController {
     
     private var videoCaptureDevice: AVCaptureDevice?
     private var longPressGesture: UILongPressGestureRecognizer!
-    private var blackoutView: UIView = UIView()
+    private var blackoutView: UIVisualEffectView = UIVisualEffectView(effect: nil)
+    private let blackoutAnimationDuration: TimeInterval = 0.25
+    private let blackoutBlurStyle: UIBlurEffect.Style = .systemThinMaterial
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -94,7 +96,7 @@ class ScannerViewController: UIViewController {
 
         // Prepare blackout overlay
         setupBlackoutView()
-        blackoutView.isHidden = false
+        setBlackout(visible: true, animated: false)
     }
 
     deinit {
@@ -376,7 +378,7 @@ class ScannerViewController: UIViewController {
         DispatchQueue.main.async {
             // Hide the preview layer until session confirms start
             self.previewLayer?.isHidden = true
-            self.blackoutView.isHidden = false
+            self.setBlackout(visible: true, animated: true)
         }
     }
     
@@ -406,8 +408,30 @@ class ScannerViewController: UIViewController {
     private func setupBlackoutView() {
         blackoutView.frame = view.bounds
         blackoutView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        blackoutView.backgroundColor = .black
+        blackoutView.effect = nil
         view.addSubview(blackoutView)
+    }
+    
+    private func setBlackout(visible: Bool, animated: Bool) {
+        if visible {
+            blackoutView.isHidden = false
+        }
+        let applyEffect: () -> Void = {
+            self.blackoutView.effect = visible ? UIBlurEffect(style: self.blackoutBlurStyle) : nil
+        }
+        let completion: (UIViewAnimatingPosition) -> Void = { _ in
+            if !visible {
+                self.blackoutView.isHidden = true
+            }
+        }
+        if animated {
+            let animator = UIViewPropertyAnimator(duration: blackoutAnimationDuration, curve: .easeInOut, animations: applyEffect)
+            animator.addCompletion(completion)
+            animator.startAnimation()
+        } else {
+            applyEffect()
+            completion(.end)
+        }
     }
 
     @objc private func handleSessionDidStartRunning(_ notification: Notification) {
@@ -415,7 +439,7 @@ class ScannerViewController: UIViewController {
         guard let session = notification.object as? AVCaptureSession, session === captureSession else { return }
         DispatchQueue.main.async {
             self.previewLayer?.isHidden = false
-            self.blackoutView.isHidden = true
+            self.setBlackout(visible: false, animated: true)
         }
     }
 
@@ -423,7 +447,8 @@ class ScannerViewController: UIViewController {
         guard let session = notification.object as? AVCaptureSession, session === captureSession else { return }
         DispatchQueue.main.async {
             self.previewLayer?.isHidden = true
-            self.blackoutView.isHidden = false
+            // Snap on immediately to avoid stale frame when leaving
+            self.setBlackout(visible: true, animated: false)
         }
     }
     
