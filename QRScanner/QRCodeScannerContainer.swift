@@ -16,6 +16,7 @@ import Foundation
 
 
 struct QRCodeScannerContainer: View {
+    let obfuscateSnapshot: Bool
     @State private var scannedCode: String? = nil
     @State private var scannedType: AVMetadataObject.ObjectType? = nil
     @State private var isShowingResult = false
@@ -50,7 +51,8 @@ struct QRCodeScannerContainer: View {
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     
     // Add initialization of available cameras
-    init() {
+    init(obfuscateSnapshot: Bool = false) {
+        self.obfuscateSnapshot = obfuscateSnapshot
         // Get back cameras
         let backSession = AVCaptureDevice.DiscoverySession(
             deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
@@ -96,6 +98,13 @@ struct QRCodeScannerContainer: View {
                         detectAndOpenURL(from: code)
                     }, selectedDevice: selectedLens, shouldInitializeScanner: shouldInitializeScanner)
                     .edgesIgnoringSafeArea(.all)
+                    
+                    // When obfuscating snapshots, hide only the viewfinder, keep UI visible
+                    if obfuscateSnapshot {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .edgesIgnoringSafeArea(.all)
+                    }
                     
                     // ✅ Scanner Overlay with L-Shaped Corners
                     GeometryReader { proxy in

@@ -20,18 +20,11 @@ struct QRScannerApp: App {
     
     var body: some Scene {
         WindowGroup {
-			ZStack {
-                TabBarView()
+            ZStack {
+                TabBarView(obfuscateSnapshot: obfuscateSnapshot)
                     .onAppear {
                         applyTheme() // ✅ Ensure it updates when the app opens
                     }
-				
-				// Privacy overlay to prevent camera frames from appearing in snapshots/app switcher
-				if obfuscateSnapshot {
-					Rectangle()
-						.fill(.ultraThinMaterial)
-						.ignoresSafeArea()
-				}
             }
             .sheet(isPresented: $isOnboardingRemaining, onDismiss: {
                 // Ensure the flag is set to false when the sheet is dismissed

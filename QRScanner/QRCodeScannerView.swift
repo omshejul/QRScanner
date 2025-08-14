@@ -69,6 +69,7 @@ class ScannerViewController: UIViewController {
     
     private var videoCaptureDevice: AVCaptureDevice?
     private var longPressGesture: UILongPressGestureRecognizer!
+    private var blackoutView: UIView = UIView()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -86,6 +87,18 @@ class ScannerViewController: UIViewController {
         
         // Listen for return to scanner notification
         NotificationCenter.default.addObserver(self, selector: #selector(startScanning), name: NSNotification.Name("ReturnToScanner"), object: nil)
+
+        // Observe capture session run state to control blackout overlay
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSessionDidStartRunning(_:)), name: AVCaptureSession.didStartRunningNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSessionDidStopRunning(_:)), name: AVCaptureSession.didStopRunningNotification, object: nil)
+
+        // Prepare blackout overlay
+        setupBlackoutView()
+        blackoutView.isHidden = false
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func setupLongPressGesture() {
@@ -329,8 +342,10 @@ class ScannerViewController: UIViewController {
                 return
             }
             
+            // Assign the session BEFORE starting it to avoid missing didStartRunning notification
+            self.captureSession = session
+            
             DispatchQueue.main.async {
-                self.captureSession = session
                 self.setupPreviewLayer()
             }
             
@@ -346,6 +361,10 @@ class ScannerViewController: UIViewController {
         if let previewLayer = previewLayer {
             view.layer.addSublayer(previewLayer)
         }
+        // Ensure the blackout overlay stays above the preview
+        if blackoutView.superview != nil {
+            view.bringSubviewToFront(blackoutView)
+        }
     }
     
     @objc func startScanning() {
@@ -354,6 +373,11 @@ class ScannerViewController: UIViewController {
                 captureSession.startRunning()
             }
         }
+        DispatchQueue.main.async {
+            // Hide the preview layer until session confirms start
+            self.previewLayer?.isHidden = true
+            self.blackoutView.isHidden = false
+        }
     }
     
     @objc func stopScanning() {
@@ -361,6 +385,11 @@ class ScannerViewController: UIViewController {
             if let captureSession = self.captureSession, captureSession.isRunning {
                 captureSession.stopRunning()
             }
+        }
+        DispatchQueue.main.async {
+            // Immediately cover the last frame to avoid showing stale content
+            self.previewLayer?.isHidden = true
+            self.blackoutView.isHidden = false
         }
     }
     
@@ -372,6 +401,30 @@ class ScannerViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         stopScanning()
+    }
+
+    private func setupBlackoutView() {
+        blackoutView.frame = view.bounds
+        blackoutView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        blackoutView.backgroundColor = .black
+        view.addSubview(blackoutView)
+    }
+
+    @objc private func handleSessionDidStartRunning(_ notification: Notification) {
+        // Only react if it's our session
+        guard let session = notification.object as? AVCaptureSession, session === captureSession else { return }
+        DispatchQueue.main.async {
+            self.previewLayer?.isHidden = false
+            self.blackoutView.isHidden = true
+        }
+    }
+
+    @objc private func handleSessionDidStopRunning(_ notification: Notification) {
+        guard let session = notification.object as? AVCaptureSession, session === captureSession else { return }
+        DispatchQueue.main.async {
+            self.previewLayer?.isHidden = true
+            self.blackoutView.isHidden = false
+        }
     }
     
     func switchCamera(to device: AVCaptureDevice?) {

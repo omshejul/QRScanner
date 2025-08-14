@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct TabBarView: View {
-    init() {
+    let obfuscateSnapshot: Bool
+    init(obfuscateSnapshot: Bool = false) {
+        self.obfuscateSnapshot = obfuscateSnapshot
         setupTabBarAppearance()
     }
     
     var body: some View {
         TabView {
-            QRCodeScannerContainer()
+            QRCodeScannerContainer(obfuscateSnapshot: obfuscateSnapshot)
                 .tabItem {
                     Label("Scan", systemImage: "qrcode.viewfinder")
                 }
