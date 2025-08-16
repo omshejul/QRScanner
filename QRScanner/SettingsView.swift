@@ -14,6 +14,7 @@ struct SettingsView: View {
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("autoOpenUPI") private var autoOpenUPI = false
     @AppStorage("defaultUPIApp") private var defaultUPIApp = "None"
+    @AppStorage("autoOpenTOTP") private var autoOpenTOTP = true
     @AppStorage("autoOpenPasskey") private var autoOpenPasskey = true
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = false
     @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
@@ -23,6 +24,8 @@ struct SettingsView: View {
     @State private var showUPIAppOptions = false
     @State private var showOnboarding = false
     @State private var isSharingApp = false
+    
+    @State private var showSettingsInstructions = false
     
     let themeOptions = ["Device", "Light", "Dark"]
     let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
@@ -119,18 +122,46 @@ struct SettingsView: View {
                     }
                 }
                 
-                // MARK: - Passkey Settings
-                Section(header: Text("Passkey Authentication"), footer: Text("Automatically open passkey and FIDO authentication URLs with compatible apps.")) {
+                // MARK: - Authentication Settings
+                Section(header: Text("Authentication"), footer: CustomFooterAuthView()) {
+                    Toggle(isOn: $autoOpenTOTP) {
+                        Label {
+                            Text("Auto Open TOTP URLs")
+                        } icon: {
+                            Image(systemName: "lock.rotation")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .accessibilityLabel("Auto Open TOTP URLs")
+                    .accessibilityHint("Toggle to enable or disable automatic opening of TOTP authentication URLs.")
+                    
                     Toggle(isOn: $autoOpenPasskey) {
                         Label {
                             Text("Auto Open Passkey URLs")
                         } icon: {
-                            Image(systemName: "key.horizontal")
+                            Image(systemName: "person.badge.key")
                                 .foregroundColor(.primary)
                         }
                     }
                     .accessibilityLabel("Auto Open Passkey URLs")
                     .accessibilityHint("Toggle to enable or disable automatic opening of passkey authentication URLs.")
+                }
+                .alert("Configure Default Apps", isPresented: $showSettingsInstructions) {
+                    Button("Open Settings") {
+                        if let settingsUrl = URL(string: "App-Prefs:root=PASSWORDS") {
+                            UIApplication.shared.open(settingsUrl)
+                        } else if let settingsUrl = URL(string: "x-apple-systempreferences:com.apple.PreferencePane.Passwords") {
+                            UIApplication.shared.open(settingsUrl)
+                        } else {
+                            // Fallback to general settings
+                            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(settingsUrl)
+                            }
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("To set your app as default for passwords:\n\n1. Go to Settings\n2. Tap 'Apps'\n3. Tap 'Default Apps'\n4. Select your preferred password manager")
                 }
                 
                 // MARK: - Appearance Settings
@@ -345,6 +376,7 @@ struct SettingsView: View {
         autoOpenLinks = false
         autoOpenUPI = false
         defaultUPIApp = "None"
+        autoOpenTOTP = true
         autoOpenPasskey = true
         isOnboardingRemaining = true // Reset onboarding state
         showDragDropHint = true
@@ -487,4 +519,45 @@ struct UPIAppSelectionView: View {
             }
         }
     }
+}
+
+// MARK: - Custom Footer View
+struct CustomFooterAuthView: View {
+    @State private var showSettingsInstructions = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Automatically open authentication URLs with default password manager. ")
+                .foregroundColor(.secondary)
+                .font(.footnote)
+            
+            Button("Change default password manager") {
+                showSettingsInstructions = true
+            }
+            .font(.footnote)
+            .foregroundColor(.blue)
+            .padding(.top, 2)
+            
+        }
+        .alert("Configure Default Apps", isPresented: $showSettingsInstructions) {
+            Button("Open Settings") {
+                if let settingsUrl = URL(string: "App-Prefs:root=PASSWORDS") {
+                    UIApplication.shared.open(settingsUrl)
+                } else if let settingsUrl = URL(string: "x-apple-systempreferences:com.apple.PreferencePane.Passwords") {
+                    UIApplication.shared.open(settingsUrl)
+                } else {
+                    // Fallback to general settings
+                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsUrl)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("To change default password manager:\n\n1. Go to Settings\n2. Tap 'Apps'\n3. Tap 'Default Apps'\n4. Tap 'Passwords & Codes'\n5. Select your preferred password manager")
+        }
+    }
+}
+#Preview {
+    CustomFooterAuthView()
 }
