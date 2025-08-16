@@ -267,6 +267,8 @@ struct ScanResultView: View {
         // Then check for specific content patterns
         if text.starts(with: "upi://pay") {
             return "\(baseType) (UPI Payment)"
+        } else if text.starts(with: "otpauth://") {
+            return "\(baseType) (TOTP Authenticator)"
         } else if text.starts(with: "http") {
             return "\(baseType) (URL)"
         } else if text.contains("@") {
@@ -966,6 +968,7 @@ struct ActionButtonsView: View {
                     !scannedText.lowercased().starts(with: "sms:") &&
                     !scannedText.lowercased().starts(with: "upi://") &&
                     !scannedText.lowercased().starts(with: "fido:/") && // Passkey URLs
+                    !scannedText.lowercased().starts(with: "otpauth://") && // TOTP URLs
                     !scannedText.lowercased().contains("wifi:") &&
                     !scannedText.lowercased().contains("begin:vcard") &&
                     !scannedText.lowercased().contains("begin:vevent") && // Calendar events
@@ -984,7 +987,7 @@ struct ActionButtonsView: View {
                 }
                 
                 if scannedText.lowercased().starts(with: "fido:/") {
-                    ActionButton(icon: "key.horizontal", text: "Open Passkey Authentication") {
+                    ActionButton(icon: "person.badge.key", text: "Open Passkey Authentication") {
                         if let url = URL(string: scannedText) {
                             UIApplication.shared.open(url) { success in
                                 if success {
@@ -1002,6 +1005,31 @@ struct ActionButtonsView: View {
                            let autoOpenPasskey = UserDefaults.standard.value(forKey: "autoOpenPasskey") as? Bool,
                            autoOpenPasskey {
                             // Auto-open passkey URL
+                            if let url = URL(string: scannedText) {
+                                UIApplication.shared.open(url) { success in
+                                    if success {
+                                        onDismiss()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Divider()
+                }
+                
+                if scannedText.lowercased().starts(with: "otpauth://") {
+                    ActionButton(icon: "lock.rotation", text: "Add to Authenticator") {
+                        if let url = URL(string: scannedText) {
+                            UIApplication.shared.open(url)
+                            onDismiss()
+                        }
+                    }
+                    .onAppear {
+                        // Only auto-open TOTP URLs if not viewing from history
+                        if !isFromHistory,
+                           let autoOpenTOTP = UserDefaults.standard.value(forKey: "autoOpenTOTP") as? Bool,
+                           autoOpenTOTP {
+                            // Auto-open TOTP URL
                             if let url = URL(string: scannedText) {
                                 UIApplication.shared.open(url) { success in
                                     if success {
