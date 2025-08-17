@@ -7,6 +7,29 @@
 
 import SwiftUI
 
+// MARK: - Shared Helper Functions
+/// Helper function to get custom icon name for each UPI app
+func getUPIIconName(for app: String) -> String? {
+    switch app {
+    case "CRED":
+        return "cred"
+    case "WhatsApp":
+        return "whatsapp-appicon"
+    case "PhonePe":
+        return "phonepe" // You'll need to add this icon
+    case "Google Pay":
+        return "googlepay" // You'll need to add this icon
+    case "Paytm":
+        return "paytm" // You'll need to add this icon
+    case "BHIM":
+        return "bhim" // You'll need to add this icon
+    case "Amazon Pay":
+        return "amazonpay" // You'll need to add this icon
+    default:
+        return nil
+    }
+}
+
 struct SettingsView: View {
     @AppStorage("scanSoundEnabled") private var scanSoundEnabled = false
     @AppStorage("vibrationEnabled") private var vibrationEnabled = true
@@ -37,6 +60,7 @@ struct SettingsView: View {
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
         return "\(version) (\(build))"
     }
+
     
     var body: some View {
         NavigationStack {
@@ -102,8 +126,17 @@ struct SettingsView: View {
                                     Text("Default UPI App")
                                         .foregroundColor(.primary)
                                 } icon: {
-                                    Image(systemName: "app.badge")
-                                        .foregroundColor(.primary)
+                                    // Use custom icon if available for the selected app
+                                    if let iconName = getUPIIconName(for: defaultUPIApp) {
+                                        Image(iconName)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 24, height: 24)
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    } else {
+                                        Image(systemName: "app.badge")
+                                            .foregroundColor(.primary)
+                                    }
                                 }
                                 
                                 Spacer()
@@ -452,6 +485,7 @@ struct UPIAppSelectionView: View {
     @Environment(\.dismiss) private var dismiss
     
     let upiAppOptions = ["None", "PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+
     
     var body: some View {
         NavigationStack {
@@ -462,10 +496,19 @@ struct UPIAppSelectionView: View {
                         dismiss()
                     } label: {
                         HStack {
-                            Image(systemName: app == "None" ? "xmark.circle" : "app.badge")
-                                .font(.title3)
-                                .frame(width: 30, height: 30)
-                                .foregroundColor(.primary)
+                            // Use custom icon if available, otherwise use system icon
+                            if let iconName = getUPIIconName(for: app) {
+                                Image(iconName)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 30, height: 30)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            } else {
+                                Image(systemName: app == "None" ? "xmark.circle" : "app.badge")
+                                    .font(.title3)
+                                    .frame(width: 30, height: 30)
+                                    .foregroundColor(.primary)
+                            }
                             
                             VStack(alignment: .leading) {
                                 Text(app)
