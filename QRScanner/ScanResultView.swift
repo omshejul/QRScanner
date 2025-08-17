@@ -179,7 +179,7 @@ struct ScanResultView: View {
                 }
                 
                 // UPI Details Expandable View
-                if scannedText.lowercased().starts(with: "upi://pay") {
+                if scannedText.lowercased().starts(with: "upi://") {
                     UPIDetailView(upiString: scannedText)
                 }
                 
@@ -265,7 +265,7 @@ struct ScanResultView: View {
         let baseType = getBarcodeTypeName(type)
         
         // Then check for specific content patterns
-        if text.starts(with: "upi://pay") {
+        if text.starts(with: "upi://") {
             return "\(baseType) (UPI Payment)"
         } else if text.starts(with: "otpauth://") {
             return "\(baseType) (TOTP Authenticator)"
@@ -371,12 +371,15 @@ struct UPIDetailView: View {
     
     // Parse UPI parameters
     private var upiParams: [String: String] {
-        guard upiString.hasPrefix("upi://pay?") else { return [:] }
+        // Check for either pay or mandate prefix
+        guard upiString.hasPrefix("upi://pay?") || upiString.hasPrefix("upi://mandate?") else { return [:] }
         
         // Extract query parameters
-        let queryString = upiString.replacingOccurrences(of: "upi://pay?", with: "")
+        let queryString = upiString
+            .replacingOccurrences(of: "upi://pay?", with: "")
+            .replacingOccurrences(of: "upi://mandate?", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "&")) // Remove trailing &
         let pairs = queryString.components(separatedBy: "&")
-        
         // Build dictionary
         var params = [String: String]()
         for pair in pairs {
@@ -1042,7 +1045,7 @@ struct ActionButtonsView: View {
                     Divider()
                 }
                 
-                if scannedText.lowercased().starts(with: "upi://pay") {
+                if scannedText.lowercased().starts(with: "upi://") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
                         showUPIAppSelection(for: scannedText)
                         onDismiss()
@@ -2043,17 +2046,17 @@ func openUPILink(_ upiLink: String, with app: String) {
     let urlString: String
     switch app {
     case "PhonePe":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "phonepe://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "phonepe://upi/")
     case "Google Pay":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "gpay://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "gpay://upi/")
     case "Paytm":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "paytmmp://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "paytmmp://upi/")
     case "CRED":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "credpay://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "credpay://upi/")
     case "BHIM":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "bhim://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "bhim://upi/")
     case "Amazon Pay":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "amazonpay://upi/pay")
+        urlString = upiLink.replacingOccurrences(of: "upi://", with: "amazonpay://upi/")
     case "WhatsApp":
         urlString = upiLink // WhatsApp uses the default UPI scheme
     default:

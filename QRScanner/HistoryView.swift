@@ -275,7 +275,7 @@ struct HistoryView: View {
     
     private func getIcon(for text: String) -> String {
         // First check for special content patterns
-        if text.starts(with: "upi://pay") {
+        if text.starts(with: "upi://") {
             return "indianrupeesign.circle"
         } else if text.lowercased().contains("wifi:") {
             return "wifi"

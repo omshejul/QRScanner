@@ -515,7 +515,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 // MARK: - Save to Create History
 func saveToCreateHistory(_ createdText: String) {
     let displayType: String
-    if createdText.starts(with: "upi://pay") {
+    if createdText.starts(with: "upi://") {
         displayType = "UPI Payment"
     } else if createdText.starts(with: "http") {
         displayType = "Web URL"
