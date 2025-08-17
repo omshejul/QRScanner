@@ -2267,11 +2267,6 @@ struct ModernUPISelectionView: View {
         }
         .presentationDetents([.height(600), .large])
         .presentationDragIndicator(.visible)
-        .presentationBackground(alignment: .center) {
-          // Glassy container for the whole sheet
-          RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .glassBackgroundEffect()   // iOS 26+
-        }
     }
 }
 
