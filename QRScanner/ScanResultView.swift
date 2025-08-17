@@ -17,6 +17,7 @@ import EventKit
 import EventKitUI
 //import URLDetectorUtility
 
+
 struct ScanResultView: View {
     let scannedText: String
     let barcodeType: AVMetadataObject.ObjectType
@@ -823,6 +824,8 @@ struct ActionButtonsView: View {
     @State private var isGeneratingQR = false
     @State private var qrShareURL: URL?
     @State private var detectedURL: URL?
+    @State private var showUPISheet = false
+    @State private var pendingUPILink = ""
     
     // MARK: - Get Region-Specific Amazon URL
     private func getAmazonDomain() -> String {
@@ -1047,8 +1050,8 @@ struct ActionButtonsView: View {
                 
                 if scannedText.lowercased().starts(with: "upi://") {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
-                        showUPIAppSelection(for: scannedText)
-                        onDismiss()
+                        pendingUPILink = scannedText
+                        showUPISheet = true
                     }
                     .onAppear {
                         // Only auto-open UPI apps if not viewing from history
@@ -1335,6 +1338,15 @@ struct ActionButtonsView: View {
                 if let qrShareURL = qrShareURL {
                     ShareSheet(activityItems: [qrShareURL])
                 }
+            }
+            .sheet(isPresented: $showUPISheet) {
+                ModernUPISelectionView(
+                    upiLink: pendingUPILink,
+                    onAppSelected: { app in
+                        openUPILink(pendingUPILink, with: app)
+                        onDismiss()
+                    }
+                )
             }
         }
         .padding(.top, 10)
@@ -2070,12 +2082,10 @@ func openUPILink(_ upiLink: String, with app: String) {
 
 // Helper function to connect to Wi-Fi
 func connectToWiFi(ssid: String, passphrase: String) {
-    // Check if running on simulator
     #if targetEnvironment(simulator)
     showToast(message: "Wi-Fi connection not available in simulator")
     return
-    #endif
-    
+    #else
     let configuration = NEHotspotConfiguration(ssid: ssid, passphrase: passphrase, isWEP: false)
     configuration.joinOnce = false // Allow persistent connection
 
@@ -2119,6 +2129,7 @@ func connectToWiFi(ssid: String, passphrase: String) {
             }
         }
     }
+    #endif
 }
 
 // Helper function to show toast message
@@ -2193,3 +2204,74 @@ func showToast(message: String) {
         })
     })
 }
+
+// MARK: - Modern UPI Selection View
+struct ModernUPISelectionView: View {
+    let upiLink: String
+    let onAppSelected: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    private let upiApps = ["PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(upiApps, id: \.self) { app in
+                    Button(action: {
+                        onAppSelected(app)
+                        dismiss()
+                    }) {
+                        HStack(spacing: 16) {
+                            // Custom app icon or system fallback
+                            if let iconName = getUPIIconName(for: app) {
+                                Image(iconName)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                Image(systemName: "app.badge")
+                                    .font(.title2)
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(app)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                }
+            }
+            .navigationTitle("Choose Payment App")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(600), .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(alignment: .center) {
+          // Glassy container for the whole sheet
+          RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .glassBackgroundEffect()   // iOS 26+
+        }
+    }
+}
+
