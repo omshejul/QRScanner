@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1024"
+   height="1024"
+   viewBox="0 0 270.93333 270.93333"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   sodipodi:docname="shapes-bg.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#7d7d7d"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showborder="true"
+     inkscape:zoom="0.87047556"
+     inkscape:cx="441.13818"
+     inkscape:cy="398.05828"
+     inkscape:window-width="2560"
+     inkscape:window-height="1314"
+     inkscape:window-x="0"
+     inkscape:window-y="31"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="shapsbg">
+    <path
+       sodipodi:type="star"
+       style="fill:#ffffff;stroke:none;stroke-width:0.152291;stroke-linecap:round;stroke-linejoin:round"
+       id="path107"
+       inkscape:flatsided="true"
+       sodipodi:sides="5"
+       sodipodi:cx="4301.0737"
+       sodipodi:cy="1052.4283"
+       sodipodi:r1="33.400291"
+       sodipodi:r2="27.021404"
+       sodipodi:arg1="1.5707963"
+       sodipodi:arg2="2.1991149"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 4301.0737,1085.8286 -31.7655,-23.079 12.1333,-37.3427 39.2644,0 12.1334,37.3427 z"
+       inkscape:transform-center-y="-3.1895329"
+       transform="matrix(-1.2071678,0.35956645,-0.35956645,-1.2071678,5709.7136,-140.27693)"
+       inkscape:transform-center-x="6.1490616e-05" />
+  </g>
+</svg>

@@ -161,27 +161,9 @@
             "solid" : "srgb:0.00000,0.00000,0.00000,1.00000"
           },
           "glass" : true,
-          "hidden-specializations" : [
-            {
-              "value" : false
-            },
-            {
-              "idiom" : "square",
-              "value" : false
-            }
-          ],
+          "hidden" : false,
           "image-name" : "bg.svg",
           "name" : "bg",
-          "opacity-specializations" : [
-            {
-              "appearance" : "dark",
-              "value" : 0
-            },
-            {
-              "appearance" : "tinted",
-              "value" : 0
-            }
-          ],
           "position" : {
             "scale" : 2,
             "translation-in-points" : [
