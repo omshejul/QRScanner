@@ -2053,6 +2053,7 @@ class ContactPresenter: NSObject {
         }
     }
 }
+//MARK: - UPI Link
 // Helper function to open UPI link with specific app
 func openUPILink(_ upiLink: String, with app: String) {
     let urlString: String
@@ -2077,9 +2078,14 @@ func openUPILink(_ upiLink: String, with app: String) {
     
     if let url = URL(string: urlString) {
         UIApplication.shared.open(url, options: [:]) { _ in }
+        
+        // Show toast message after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            showToast(message: "Make sure \(app) is installed")
+        }
     }
 }
-
+//MARK: - Wi-Fi Connection
 // Helper function to connect to Wi-Fi
 func connectToWiFi(ssid: String, passphrase: String) {
     #if targetEnvironment(simulator)
@@ -2131,78 +2137,72 @@ func connectToWiFi(ssid: String, passphrase: String) {
     }
     #endif
 }
+//MARK: - Toast Message
+// SwiftUI Toast View using iOS 26 Glass Effect
+struct GlassToastView: View {
+    let message: String
+    @State private var isShowing = false
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            
+            Text(message)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .glassEffect()
+                .offset(y: isShowing ? -10 : 10)
+                .opacity(isShowing ? 1 : 0)
+                .animation(.easeOut(duration: 0.3), value: isShowing)
+                .padding(.bottom, 60)
+        }
+        .padding(.horizontal, 12)
+        .onAppear {
+            withAnimation {
+                isShowing = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation(.easeIn(duration: 0.3)) {
+                    isShowing = false
+                }
+            }
+        }
+    }
+}
 
-// Helper function to show toast message
+// Helper function to show toast message using SwiftUI Glass Effect
 func showToast(message: String) {
     guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
           let window = windowScene.windows.first
     else { return }
     
-    let toastContainer = UIView(frame: CGRect(x: 0, y: 0, width: 280, height: 50))
+    let toastView = GlassToastView(message: message)
+    let hostingController = UIHostingController(rootView: toastView)
+    hostingController.view.backgroundColor = .clear
     
-    // Create blur effect background like system toast
-    let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
-    let blurView = UIVisualEffectView(effect: blurEffect)
-    blurView.frame = toastContainer.bounds
-    blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    blurView.layer.cornerRadius = 10
-    blurView.clipsToBounds = true
-    toastContainer.addSubview(blurView)
+    // Make the hosting view non-interactive to allow touches to pass through
+    hostingController.view.isUserInteractionEnabled = false
     
-    // Add a subtle border
-    toastContainer.layer.cornerRadius = 10
-    toastContainer.layer.borderWidth = 0.5
-    toastContainer.layer.borderColor = UIColor.gray.withAlphaComponent(0.2).cgColor
+    window.addSubview(hostingController.view)
     
-    // Configure message label
-    let messageLabel = UILabel()
-    messageLabel.textColor = .label
-    messageLabel.textAlignment = .center
-    messageLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-    messageLabel.text = message
-    messageLabel.numberOfLines = 0
-    
-    // Add label to vibrancy effect for better readability
-    let vibrancyEffect = UIVibrancyEffect(blurEffect: blurEffect)
-    let vibrancyView = UIVisualEffectView(effect: vibrancyEffect)
-    vibrancyView.frame = blurView.bounds
-    vibrancyView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    blurView.contentView.addSubview(vibrancyView)
-    
-    messageLabel.translatesAutoresizingMaskIntoConstraints = false
-    vibrancyView.contentView.addSubview(messageLabel)
-    
+    // Position the toast at the bottom
+    hostingController.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-        messageLabel.leadingAnchor.constraint(equalTo: vibrancyView.leadingAnchor, constant: 10),
-        messageLabel.trailingAnchor.constraint(equalTo: vibrancyView.trailingAnchor, constant: -10),
-        messageLabel.topAnchor.constraint(equalTo: vibrancyView.topAnchor, constant: 10),
-        messageLabel.bottomAnchor.constraint(equalTo: vibrancyView.bottomAnchor, constant: -10)
+        hostingController.view.leadingAnchor.constraint(equalTo: window.leadingAnchor),
+        hostingController.view.trailingAnchor.constraint(equalTo: window.trailingAnchor),
+        hostingController.view.topAnchor.constraint(equalTo: window.topAnchor),
+        hostingController.view.bottomAnchor.constraint(equalTo: window.bottomAnchor)
     ])
     
-    window.addSubview(toastContainer)
-    
-    // Position at bottom like system toast
-    toastContainer.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-        toastContainer.centerXAnchor.constraint(equalTo: window.centerXAnchor),
-        toastContainer.bottomAnchor.constraint(equalTo: window.safeAreaLayoutGuide.bottomAnchor, constant: -50),
-        toastContainer.widthAnchor.constraint(lessThanOrEqualToConstant: 280)
-    ])
-    
-    toastContainer.alpha = 0
-    
-    // Animate like system toast
-    UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
-        toastContainer.alpha = 1.0
-        toastContainer.transform = CGAffineTransform(translationX: 0, y: -10)
-    }, completion: { _ in
-        UIView.animate(withDuration: 0.3, delay: 2, options: .curveEaseIn, animations: {
-            toastContainer.alpha = 0
-            toastContainer.transform = CGAffineTransform(translationX: 0, y: 10)
-        }, completion: { _ in
-            toastContainer.removeFromSuperview()
-        })
-    })
+    // Remove the toast after animation completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        hostingController.view.removeFromSuperview()
+    }
 }
 
 // MARK: - Modern UPI Selection View
