@@ -6,6 +6,84 @@
 //
 
 import SwiftUI
+import StoreKit
+
+// MARK: - Review Manager
+class ReviewManager: ObservableObject {
+    static let shared = ReviewManager()
+    
+    @AppStorage("appLaunchCount") private var appLaunchCount = 0
+    @AppStorage("totalScanCount") private var totalScanCount = 0
+    @AppStorage("totalUsageTimeMinutes") private var totalUsageTimeMinutes = 0
+    @AppStorage("lastReviewRequestDate") private var lastReviewRequestDate = Date.distantPast
+    @AppStorage("hasRequestedReview") private var hasRequestedReview = false
+    
+    private var sessionStartTime = Date()
+    
+    init() {
+        // Track app launch
+        appLaunchCount += 1
+        sessionStartTime = Date()
+        
+        print("📱 App Launch #\(appLaunchCount)")
+        
+        // Check if we should request a review
+        checkForReviewRequest()
+    }
+    
+    func trackQRScan() {
+        totalScanCount += 1
+        print("📷 QR Scan #\(totalScanCount)")
+        
+        // Check for review after significant scan activity
+        checkForReviewRequest()
+    }
+    
+    func trackSessionEnd() {
+        let sessionDuration = Date().timeIntervalSince(sessionStartTime)
+        let sessionMinutes = Int(sessionDuration / 60)
+        totalUsageTimeMinutes += sessionMinutes
+        
+        print("⏱️ Session: \(sessionMinutes) min, Total: \(totalUsageTimeMinutes) min")
+    }
+    
+    private func checkForReviewRequest() {
+        // Don't spam users - wait at least 60 days between requests
+        let daysSinceLastRequest = Calendar.current.dateComponents([.day], from: lastReviewRequestDate, to: Date()).day ?? 0
+        
+        // Conditions for requesting review:
+        // 1. At least 3 scans OR 30 minutes of usage
+        // 2. At least 5 app launches
+        // 3. At least 5 days since last request (or never requested)
+        // 4. User has completed onboarding
+        
+        let hasSignificantUsage = totalScanCount >= 3 || totalUsageTimeMinutes >= 30
+        let hasMultipleLaunches = appLaunchCount >= 5
+        let enoughTimePassed = daysSinceLastRequest >= 5 || !hasRequestedReview
+        let completedOnboarding = !UserDefaults.standard.bool(forKey: "isOnboardingRemaining")
+        
+        if hasSignificantUsage && hasMultipleLaunches && enoughTimePassed && completedOnboarding {
+            Task { @MainActor in
+                requestReview()
+            }
+        }
+    }
+    
+        @MainActor
+    private func requestReview() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+            return
+        }
+        
+        print("⭐ Requesting App Store review...")
+        
+        AppStore.requestReview(in: windowScene)
+        
+        // Update tracking
+        hasRequestedReview = true
+        lastReviewRequestDate = Date()
+    }
+}
 
 @main
 struct QRScannerApp: App {
@@ -13,6 +91,9 @@ struct QRScannerApp: App {
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = true
 	@Environment(\.scenePhase) private var scenePhase
 	@State private var obfuscateSnapshot = false
+    
+    // Initialize review manager
+    private let reviewManager = ReviewManager.shared
     
     init() {
         applyTheme() // ✅ Apply theme immediately on launch
@@ -34,6 +115,11 @@ struct QRScannerApp: App {
             }
 			.onChange(of: scenePhase) { _, newPhase in
 				obfuscateSnapshot = newPhase != .active
+				
+				// Track session end when app goes to background
+				if newPhase == .background {
+					reviewManager.trackSessionEnd()
+				}
 			}
         }
     }

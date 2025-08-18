@@ -551,6 +551,9 @@ func saveToCreateHistory(_ createdText: String) {
     } else {
         // Add as a new item
         history.append(createItem)
+        
+        // Track QR generation as usage activity
+        ReviewManager.shared.trackQRScan()
     }
     
     // Save the updated history

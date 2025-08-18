@@ -747,6 +747,9 @@ func saveToScanHistory(_ scannedText: String, type: AVMetadataObject.ObjectType)
     if !history.contains(where: { ($0["text"] as? String) == scannedText }) {
         history.append(scanItem)
         UserDefaults.standard.setValue(history, forKey: "scanHistory")
+        
+        // Track scan for review system
+        ReviewManager.shared.trackQRScan()
     }
 }
 

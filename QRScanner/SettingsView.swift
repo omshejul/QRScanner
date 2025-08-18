@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import StoreKit
 
 // MARK: - Shared Helper Functions
 /// Helper function to get custom icon name for each UPI app
@@ -341,17 +342,22 @@ struct SettingsView: View {
 //                    .accessibilityLabel("Buy Me a Coffee")
 //                    .accessibilityHint("Opens the Buy Me a Coffee page to support the developer.")
 
-                    // Link(destination: URL(string: "https://apps.apple.com/app/id123456789?action=write-review")!) {
-                    //     Label {
-                    //         Text("Write a Review")
-                    //     } icon: {
-                    //         Image(systemName: "star")
-                    //             .foregroundStyle(.primary)
-                    //     }
-                    // }
-                    // .foregroundStyle(.primary)
-                    // .accessibilityLabel("Write a Review")
-                    // .accessibilityHint("Opens the App Store to write a review.")
+                    Button(action: {
+                        // Open App Store review page programmatically
+                        if let appStoreURL = URL(string: "https://apps.apple.com/in/app/scan-qr-scanner-generator/id6742703637?action=write-review") {
+                            UIApplication.shared.open(appStoreURL)
+                        }
+                    }) {
+                        Label {
+                            Text("Write a Review")
+                        } icon: {
+                            Image(systemName: "star")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                    .accessibilityLabel("Write a Review")
+                    .accessibilityHint("Opens the App Store to write a review.")
                 }
             }
             .navigationTitle("Settings")
