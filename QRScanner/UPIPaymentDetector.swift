@@ -4,6 +4,22 @@ enum UPIPaymentDetector {
     private static let upiSchemePrefix = "upi://pay"
     private static let npciUPIApplicationIdentifier = "A000000524"
     private static let merchantAccountInfoRange = 2...51
+    private static let currencyCodesByNumericCode = [
+        "036": "AUD",
+        "124": "CAD",
+        "156": "CNY",
+        "344": "HKD",
+        "356": "INR",
+        "392": "JPY",
+        "458": "MYR",
+        "524": "NPR",
+        "702": "SGD",
+        "764": "THB",
+        "784": "AED",
+        "826": "GBP",
+        "840": "USD",
+        "978": "EUR"
+    ]
     
     private struct EMVTag {
         let id: String
@@ -34,7 +50,15 @@ enum UPIPaymentDetector {
         }
         
         var transactionCurrency: String? {
-            tags["53"]
+            guard let currency = tags["53"] else { return nil }
+            return UPIPaymentDetector.currencyCodesByNumericCode[currency] ?? currency
+        }
+        
+        var transactionReference: String? {
+            upiAccountTemplates.compactMap { template in
+                let value = template["01"]
+                return value?.contains("@") == true ? nil : value
+            }.first ?? parseNestedTags(from: tags["62"])["05"]
         }
     }
     
@@ -61,6 +85,7 @@ enum UPIPaymentDetector {
         var queryItems = [URLQueryItem(name: "pa", value: payeeAddress)]
         appendQueryItem("pn", payload.payeeName, to: &queryItems)
         appendQueryItem("mc", payload.merchantCategoryCode, to: &queryItems)
+        appendQueryItem("tr", payload.transactionReference, to: &queryItems)
         appendQueryItem("am", payload.amount, to: &queryItems)
         appendQueryItem("cu", payload.transactionCurrency, to: &queryItems)
         components.queryItems = queryItems
@@ -108,6 +133,11 @@ enum UPIPaymentDetector {
     private static func appendQueryItem(_ name: String, _ value: String?, to queryItems: inout [URLQueryItem]) {
         guard let value, !value.isEmpty else { return }
         queryItems.append(URLQueryItem(name: name, value: value))
+    }
+    
+    private static func parseNestedTags(from text: String?) -> [String: String] {
+        guard let text, let tags = parseTLV(text) else { return [:] }
+        return dictionary(from: tags)
     }
     
     private static func dictionary(from tags: [EMVTag]) -> [String: String] {
