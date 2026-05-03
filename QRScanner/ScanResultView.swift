@@ -38,7 +38,9 @@ struct ScanResultView: View {
     @State private var formattedURLString: String = ""
     @State private var extractedURLs: [URL] = []
     
-
+    private var upiPaymentLink: String? {
+        UPIPaymentDetector.paymentURLString(from: scannedText)
+    }
     
     var body: some View {
         ScrollView {
@@ -179,8 +181,8 @@ struct ScanResultView: View {
                 }
                 
                 // UPI Details Expandable View
-                if scannedText.lowercased().starts(with: "upi://pay") {
-                    UPIDetailView(upiString: scannedText)
+                if let upiPaymentLink {
+                    UPIDetailView(upiString: upiPaymentLink)
                 }
                 
                 // Action Buttons
@@ -265,21 +267,21 @@ struct ScanResultView: View {
         let baseType = getBarcodeTypeName(type)
         
         // Then check for specific content patterns
-        if text.starts(with: "upi://pay") {
+        if UPIPaymentDetector.isUPIPayment(text) {
             return "\(baseType) (UPI Payment)"
-        } else if text.starts(with: "http") {
+        } else if text.lowercased().starts(with: "http") {
             return "\(baseType) (URL)"
-        } else if text.contains("@") {
+        } else if text.lowercased().hasPrefix("mailto:") || text.lowercased().hasPrefix("matmsg:") {
             return "\(baseType) (Email)"
-        } else if text.contains("WIFI:") {
+        } else if text.lowercased().contains("wifi:") {
             return "\(baseType) (WiFi)"
-        } else if text.starts(with: "BEGIN:VCARD") {
+        } else if text.lowercased().starts(with: "begin:vcard") {
             return "\(baseType) (Contact)"
-        } else if text.starts(with: "tel:") {
+        } else if text.lowercased().starts(with: "tel:") {
             return "\(baseType) (Phone)"
-        } else if text.starts(with: "smsto:") || text.starts(with: "sms:") {
+        } else if text.lowercased().starts(with: "smsto:") || text.lowercased().starts(with: "sms:") {
             return "\(baseType) (SMS)"
-        } else if text.starts(with: "geo:") {
+        } else if text.lowercased().starts(with: "geo:") {
             return "\(baseType) (Location)"
         } else if text.allSatisfy({ $0.isNumber }) {
             return baseType
@@ -819,6 +821,10 @@ struct ActionButtonsView: View {
     @State private var qrShareURL: URL?
     @State private var detectedURL: URL?
     
+    private var upiPaymentLink: String? {
+        UPIPaymentDetector.paymentURLString(from: scannedText)
+    }
+    
     // MARK: - Get Region-Specific Amazon URL
     private func getAmazonDomain() -> String {
         let countryCode = Locale.current.region?.identifier ?? "US"
@@ -964,7 +970,7 @@ struct ActionButtonsView: View {
                     !scannedText.lowercased().starts(with: "tel:") &&
                     !scannedText.lowercased().starts(with: "smsto:") &&
                     !scannedText.lowercased().starts(with: "sms:") &&
-                    !scannedText.lowercased().starts(with: "upi://") &&
+                    !UPIPaymentDetector.isUPIPayment(scannedText) &&
                     !scannedText.lowercased().starts(with: "fido:/") && // Passkey URLs
                     !scannedText.lowercased().contains("wifi:") &&
                     !scannedText.lowercased().contains("begin:vcard") &&
@@ -1014,9 +1020,9 @@ struct ActionButtonsView: View {
                     Divider()
                 }
                 
-                if scannedText.lowercased().starts(with: "upi://pay") {
+                if let upiPaymentLink {
                     ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
-                        showUPIAppSelection(for: scannedText)
+                        showUPIAppSelection(for: upiPaymentLink)
                         onDismiss()
                     }
                     .onAppear {
@@ -1027,7 +1033,7 @@ struct ActionButtonsView: View {
                            let defaultApp = UserDefaults.standard.string(forKey: "defaultUPIApp"),
                            defaultApp != "None" {
                             // Open directly with the default app
-                            openUPILink(scannedText, with: defaultApp)
+                            openUPILink(upiPaymentLink, with: defaultApp)
                             onDismiss()
                         }
                     }

@@ -696,7 +696,7 @@ struct QRCodeScannerContainer: View {
                lowercasedText.starts(with: "mailto:") ||     // Email
                lowercasedText.starts(with: "matmsg:") ||     // Email (MATMSG format)
                lowercasedText.starts(with: "geo:") ||        // Geographic coordinates
-               lowercasedText.starts(with: "upi://") ||      // UPI payments
+               UPIPaymentDetector.isUPIPayment(text) ||      // UPI payments
                lowercasedText.starts(with: "fido:/")         // FIDO/Passkey authentication
     }
 }

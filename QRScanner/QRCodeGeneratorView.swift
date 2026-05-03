@@ -436,26 +436,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 // MARK: - Save to Create History
 func saveToCreateHistory(_ createdText: String) {
-    let displayType: String
-    if createdText.starts(with: "upi://pay") {
-        displayType = "UPI Payment"
-    } else if createdText.starts(with: "http") {
-        displayType = "Web URL"
-    } else if createdText.starts(with: "WIFI:") {
-        displayType = "WiFi"
-    } else if createdText.starts(with: "MATMSG:") {
-        displayType = "Email"
-    } else if createdText.starts(with: "SMSTO:") {
-        displayType = "SMS"
-    } else if createdText.starts(with: "TEL:") {
-        displayType = "Phone"
-    } else if createdText.starts(with: "BEGIN:VCARD") {
-        displayType = "Contact"
-    } else if createdText.starts(with: "geo:") {
-        displayType = "Location"
-    } else {
-        displayType = "QR Code"
-    }
+    let displayType = QRContentClassifier.displayType(for: createdText)
     
     let createItem: [String: Any] = [
         "text": createdText,

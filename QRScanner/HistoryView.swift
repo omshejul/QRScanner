@@ -218,7 +218,7 @@ struct HistoryView: View {
     
     private func getIcon(for text: String) -> String {
         // First check for special content patterns
-        if text.starts(with: "upi://pay") {
+        if UPIPaymentDetector.isUPIPayment(text) {
             return "indianrupeesign.circle"
         } else if text.lowercased().contains("wifi:") {
             return "wifi"
@@ -377,23 +377,7 @@ struct HistoryView: View {
                     displayType = savedDisplayType
                 } else {
                     // Determine display type from content
-                    if text.starts(with: "WIFI:") {
-                        displayType = "WiFi"
-                    } else if text.starts(with: "http") {
-                        displayType = "Web URL"
-                    } else if text.starts(with: "MATMSG:") {
-                        displayType = "Email"
-                    } else if text.starts(with: "SMSTO:") {
-                        displayType = "SMS"
-                    } else if text.starts(with: "TEL:") {
-                        displayType = "Phone"
-                    } else if text.starts(with: "BEGIN:VCARD") {
-                        displayType = "Contact"
-                    } else if text.starts(with: "geo:") {
-                        displayType = "Location"
-                    } else {
-                        displayType = "QR Code"
-                    }
+                    displayType = QRContentClassifier.displayType(for: text)
                     
                     // Update the item in UserDefaults with the display type
                     var updatedItem = item
