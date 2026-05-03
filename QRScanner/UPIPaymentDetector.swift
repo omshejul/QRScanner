@@ -4,6 +4,7 @@ enum UPIPaymentDetector {
     private static let upiSchemePrefix = "upi://pay"
     private static let npciUPIApplicationIdentifier = "A000000524"
     private static let merchantAccountInfoRange = 2...51
+    private static let crcTagPrefix = "6304"
     private static let currencyCodesByNumericCode = [
         "036": "AUD",
         "124": "CAD",
@@ -28,13 +29,10 @@ enum UPIPaymentDetector {
     
     private struct EMVUPIPayload {
         let tags: [String: String]
-        let upiAccountTemplates: [[String: String]]
+        let upiAccountTemplates: [UPIAccountTemplate]
         
         var payeeAddress: String? {
-            upiAccountTemplates.compactMap { template in
-                let value = template["01"]
-                return value?.contains("@") == true ? value : nil
-            }.first
+            firstTemplateValue(where: { $0.payeeAddress != nil })?.payeeAddress
         }
         
         var payeeName: String? {
@@ -55,10 +53,29 @@ enum UPIPaymentDetector {
         }
         
         var transactionReference: String? {
-            upiAccountTemplates.compactMap { template in
-                let value = template["01"]
-                return value?.contains("@") == true ? nil : value
-            }.first ?? parseNestedTags(from: tags["62"])["05"]
+            firstTemplateValue(where: { $0.transactionReference != nil })?.transactionReference
+                ?? parseNestedTags(from: tags["62"])["05"]
+        }
+        
+        private func firstTemplateValue(where predicate: (UPIAccountTemplate) -> Bool) -> UPIAccountTemplate? {
+            upiAccountTemplates.sorted { lhs, rhs in
+                lhs.id < rhs.id
+            }.first(where: predicate)
+        }
+    }
+    
+    private struct UPIAccountTemplate {
+        let id: String
+        let tags: [String: String]
+        
+        var payeeAddress: String? {
+            guard let value = tags["01"], isLikelyVPA(value) else { return nil }
+            return value
+        }
+        
+        var transactionReference: String? {
+            guard let value = tags["01"], !isLikelyVPA(value) else { return nil }
+            return value
         }
     }
     
@@ -97,6 +114,7 @@ enum UPIPaymentDetector {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !isUPIURL(trimmedText),
               trimmedText.hasPrefix("000201"),
+              hasValidCRC(trimmedText),
               let rootTags = parseTLV(trimmedText) else {
             return nil
         }
@@ -106,7 +124,7 @@ enum UPIPaymentDetector {
             return nil
         }
         
-        var upiAccountTemplates: [[String: String]] = []
+        var upiAccountTemplates: [UPIAccountTemplate] = []
         for tag in rootTags {
             guard let numericID = Int(tag.id),
                   merchantAccountInfoRange.contains(numericID),
@@ -116,7 +134,7 @@ enum UPIPaymentDetector {
             
             let merchantAccountInfo = dictionary(from: merchantTags)
             if merchantAccountInfo["00"] == npciUPIApplicationIdentifier {
-                upiAccountTemplates.append(merchantAccountInfo)
+                upiAccountTemplates.append(UPIAccountTemplate(id: tag.id, tags: merchantAccountInfo))
             }
         }
         
@@ -140,10 +158,59 @@ enum UPIPaymentDetector {
         return dictionary(from: tags)
     }
     
+    private static func isLikelyVPA(_ value: String) -> Bool {
+        let parts = value.split(separator: "@", omittingEmptySubsequences: false)
+        guard parts.count == 2,
+              let handle = parts.last,
+              !parts[0].isEmpty,
+              !handle.isEmpty else {
+            return false
+        }
+        
+        return handle.allSatisfy { character in
+            character.isLetter || character.isNumber
+        }
+    }
+    
     private static func dictionary(from tags: [EMVTag]) -> [String: String] {
         tags.reduce(into: [:]) { result, tag in
             result[tag.id] = tag.value
         }
+    }
+    
+    private static func hasValidCRC(_ text: String) -> Bool {
+        guard text.count >= 8,
+              let crcTagRange = text.range(of: crcTagPrefix, options: .backwards),
+              crcTagRange.upperBound < text.endIndex else {
+            return false
+        }
+        
+        let expectedCRC = String(text[crcTagRange.upperBound...]).uppercased()
+        guard expectedCRC.count == 4,
+              expectedCRC.allSatisfy({ $0.isHexDigit }) else {
+            return false
+        }
+        
+        let crcInput = String(text[..<crcTagRange.upperBound])
+        return crc16CCITTFalseHex(for: crcInput) == expectedCRC
+    }
+    
+    private static func crc16CCITTFalseHex(for text: String) -> String {
+        var crc: UInt16 = 0xFFFF
+        
+        for byte in text.utf8 {
+            crc ^= UInt16(byte) << 8
+            
+            for _ in 0..<8 {
+                if crc & 0x8000 != 0 {
+                    crc = (crc << 1) ^ 0x1021
+                } else {
+                    crc <<= 1
+                }
+            }
+        }
+        
+        return String(format: "%04X", crc)
     }
     
     private static func parseTLV(_ text: String) -> [EMVTag]? {
