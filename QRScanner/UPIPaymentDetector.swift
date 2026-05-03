@@ -43,6 +43,10 @@ enum UPIPaymentDetector {
             tags["54"]
         }
         
+        var isDynamic: Bool {
+            tags["01"] == "12"
+        }
+        
         var merchantCategoryCode: String? {
             tags["52"]
         }
@@ -91,7 +95,8 @@ enum UPIPaymentDetector {
         
         guard let payload = emvUPIPayload(from: trimmedText),
               let payeeAddress = payload.payeeAddress,
-              !payeeAddress.isEmpty else {
+              !payeeAddress.isEmpty,
+              !payload.isDynamic || payload.transactionReference != nil else {
             return nil
         }
         
