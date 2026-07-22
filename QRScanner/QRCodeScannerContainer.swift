@@ -16,6 +16,7 @@ import Foundation
 
 
 struct QRCodeScannerContainer: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var scannedCode: String? = nil
     @State private var scannedType: AVMetadataObject.ObjectType? = nil
     @State private var isShowingResult = false
@@ -46,6 +47,8 @@ struct QRCodeScannerContainer: View {
     @AppStorage("autoOpenLinks") private var autoOpenLinks = false
     @AppStorage("showDragDropHint") private var showDragDropHint = true // New state to track hint visibility
     @State private var isDropTargeted = false // New state to track when an image is being dragged over
+    @State private var isOpeningAuthenticator = false
+    @State private var showAuthenticatorUnavailable = false
     
     let scanBoxSize: CGFloat = 250 // Square size for scanning
     
@@ -84,17 +87,9 @@ struct QRCodeScannerContainer: View {
         NavigationStack {
             ZStack {
                 if !isShowingResult {
-                    QRCodeScannerView(completion:  { code, type in
-                        scannedCode = code
-                        scannedType = type
-                        isShowingResult = true
-                        playScanSound()
-                        turnOffFlashlight()
-                        saveToScanHistory(code, type: type)
-                        
-                        // Auto-open HTTPS links if enabled
-                        detectAndOpenURL(from: code)
-                    }, selectedDevice: selectedLens, shouldInitializeScanner: shouldInitializeScanner)
+                    QRCodeScannerView(completion: handleDetectedCode,
+                                      selectedDevice: selectedLens,
+                                      shouldInitializeScanner: shouldInitializeScanner)
                     .edgesIgnoringSafeArea(.all)
                     
                     // ✅ Scanner Overlay with L-Shaped Corners
@@ -349,8 +344,56 @@ struct QRCodeScannerContainer: View {
                     }
                 }
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active && isOpeningAuthenticator {
+                    isOpeningAuthenticator = false
+                    NotificationCenter.default.post(name: NSNotification.Name("StartScanning"), object: nil)
+                }
+            }
+            .alert("Authenticator Unavailable", isPresented: $showAuthenticatorUnavailable) {
+                Button("OK", role: .cancel) {
+                    NotificationCenter.default.post(name: NSNotification.Name("StartScanning"), object: nil)
+                }
+            } message: {
+                Text("Install an authenticator app that supports setup links, then scan the code again.")
+            }
         }
         .navigationBarHidden(true)
+    }
+
+    private func handleDetectedCode(_ code: String, type: AVMetadataObject.ObjectType) {
+        if let authenticatorURL = AuthenticatorCode.url(from: code) {
+            openAuthenticator(authenticatorURL)
+            return
+        }
+
+        scannedCode = code
+        scannedType = type
+        isShowingResult = true
+        playScanSound()
+        turnOffFlashlight()
+        saveToScanHistory(code, type: type)
+
+        // Auto-open HTTPS links if enabled
+        detectAndOpenURL(from: code)
+    }
+
+    private func openAuthenticator(_ url: URL) {
+        guard !isOpeningAuthenticator else { return }
+
+        isOpeningAuthenticator = true
+        playScanSound()
+        turnOffFlashlight()
+        NotificationCenter.default.post(name: NSNotification.Name("StopScanning"), object: nil)
+
+        UIApplication.shared.open(url, options: [:]) { opened in
+            guard !opened else { return }
+
+            DispatchQueue.main.async {
+                isOpeningAuthenticator = false
+                showAuthenticatorUnavailable = true
+            }
+        }
     }
     
     // MARK: - Get Corner Positions Using GeometryReader
@@ -547,15 +590,7 @@ struct QRCodeScannerContainer: View {
                 // Process the first detected barcode
                 if let barcode = results.first, let payloadString = barcode.payloadStringValue {
                     DispatchQueue.main.async {
-                        scannedCode = payloadString
-                        scannedType = convertToAVMetadataType(from: barcode.symbology)
-                        isShowingResult = true
-                        playScanSound()
-                        saveToScanHistory(payloadString, type: convertToAVMetadataType(from: barcode.symbology))
-                        
-                        // Auto-open links if enabled and the scanned code is a URL
-                        detectAndOpenURL(from: payloadString)
-                        
+                        handleDetectedCode(payloadString, type: convertToAVMetadataType(from: barcode.symbology))
                         isScanning = false
                     }
                 } else {
@@ -728,6 +763,8 @@ struct ScannerCorner: View {
 
 // MARK: - Save to Scan History
 func saveToScanHistory(_ scannedText: String, type: AVMetadataObject.ObjectType) {
+    guard AuthenticatorCode.url(from: scannedText) == nil else { return }
+
     let scanItem: [String: Any] = [
         "text": scannedText,
         "type": type.rawValue,
