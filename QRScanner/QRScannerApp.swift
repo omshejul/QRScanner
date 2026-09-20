@@ -13,6 +13,7 @@ struct QRScannerApp: App {
     @AppStorage("isOnboardingRemaining") var isOnboardingRemaining = true
     
     init() {
+        AuthenticatorCode.removeFromScanHistory()
         applyTheme() // ✅ Apply theme immediately on launch
     }
     
