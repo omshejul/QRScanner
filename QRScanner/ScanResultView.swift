@@ -371,10 +371,7 @@ struct UPIDetailView: View {
     
     // Parse UPI parameters
     private var upiParams: [String: String] {
-        guard upiString.hasPrefix("upi://pay?") else { return [:] }
-        
-        // Extract query parameters
-        let queryString = upiString.replacingOccurrences(of: "upi://pay?", with: "")
+        guard let queryString = URLComponents(string: upiString)?.percentEncodedQuery else { return [:] }
         let pairs = queryString.components(separatedBy: "&")
         
         // Build dictionary
@@ -1021,7 +1018,7 @@ struct ActionButtonsView: View {
                 }
                 
                 if let upiPaymentLink {
-                    ActionButton(icon: "indianrupeesign.circle", text: "Pay with UPI") {
+                    ActionButton(icon: "indianrupeesign.circle", text: UPIPaymentDetector.isMandate(scannedText) ? "Open UPI Mandate" : "Pay with UPI") {
                         showUPIAppSelection(for: upiPaymentLink)
                         onDismiss()
                     }
@@ -1660,35 +1657,15 @@ struct ActionButtonCenter: View {
 func showUPIAppSelection(for upiLink: String) {
     let alert = UIAlertController(title: "Choose Payment App", message: nil, preferredStyle: .actionSheet)
     
-    // Add all UPI apps
-    alert.addAction(UIAlertAction(title: "PhonePe", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "PhonePe")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "Google Pay", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "Google Pay")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "Paytm", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "Paytm")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "CRED", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "CRED")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "BHIM", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "BHIM")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "Amazon Pay", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "Amazon Pay")
-    }))
-    
-    alert.addAction(UIAlertAction(title: "WhatsApp", style: .default, handler: { _ in
-        openUPILink(upiLink, with: "WhatsApp")
-    }))
-    
+    let apps = UPIPaymentDetector.isMandate(upiLink)
+        ? ["PhonePe", "Google Pay", "Paytm"]
+        : ["PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+    for app in apps {
+        alert.addAction(UIAlertAction(title: app, style: .default, handler: { _ in
+            openUPILink(upiLink, with: app)
+        }))
+    }
+
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
     
     if let topController = UIApplication.shared.connectedScenes
@@ -2020,28 +1997,15 @@ class ContactPresenter: NSObject {
 }
 // Helper function to open UPI link with specific app
 func openUPILink(_ upiLink: String, with app: String) {
-    let urlString: String
-    switch app {
-    case "PhonePe":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "phonepe://upi/pay")
-    case "Google Pay":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "gpay://upi/pay")
-    case "Paytm":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "paytmmp://upi/pay")
-    case "CRED":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "credpay://upi/pay")
-    case "BHIM":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "bhim://upi/pay")
-    case "Amazon Pay":
-        urlString = upiLink.replacingOccurrences(of: "upi://pay", with: "amazonpay://upi/pay")
-    case "WhatsApp":
-        urlString = upiLink // WhatsApp uses the default UPI scheme
-    default:
-        urlString = upiLink
+    guard let urlString = UPIPaymentDetector.appURLString(from: upiLink, app: app),
+          let url = URL(string: urlString) else {
+        showUPIAppSelection(for: upiLink)
+        return
     }
-    
-    if let url = URL(string: urlString) {
-        UIApplication.shared.open(url, options: [:]) { _ in }
+    UIApplication.shared.open(url, options: [:]) { success in
+        if !success {
+            showToast(message: "Could not open \(app). Try another UPI app.")
+        }
     }
 }
 

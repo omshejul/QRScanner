@@ -1,7 +1,6 @@
 import Foundation
 
 enum UPIPaymentDetector {
-    private static let upiSchemePrefix = "upi://pay"
     private static let npciUPIApplicationIdentifier = "A000000524"
     private static let merchantAccountInfoRange = 2...51
     private static let crcTagPrefix = "6304"
@@ -147,12 +146,51 @@ enum UPIPaymentDetector {
         return EMVUPIPayload(tags: tags, upiAccountTemplates: upiAccountTemplates)
     }
     
-    private static func isUPIURL(_ text: String) -> Bool {
-        text.trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .hasPrefix(upiSchemePrefix)
+    static func isMandate(_ text: String) -> Bool {
+        upiOperation(text) == "mandate"
     }
-    
+
+    static func appURLString(from text: String, app: String) -> String? {
+        guard let link = paymentURLString(from: text),
+              let operation = upiOperation(link),
+              let queryStart = link.firstIndex(of: "?") else { return nil }
+        let prefix: String
+        if operation == "mandate" {
+            // iOS mandate routes differ from ordinary payment routes.
+            switch app {
+            case "Google Pay": prefix = "gpay://upi/mandate"
+            case "PhonePe": prefix = "phonepe://mandate"
+            case "Paytm": prefix = "paytmmp://mandate"
+            default: return nil
+            }
+        } else {
+            switch app {
+            case "PhonePe": prefix = "phonepe://upi/pay"
+            case "Google Pay": prefix = "gpay://upi/pay"
+            case "Paytm": prefix = "paytmmp://upi/pay"
+            case "CRED": prefix = "credpay://upi/pay"
+            case "BHIM": prefix = "bhim://upi/pay"
+            case "Amazon Pay": prefix = "amazonpay://upi/pay"
+            default: prefix = "upi://pay"
+            }
+        }
+        // Preserve the original query, including signatures and literal plus signs.
+        return prefix + link[queryStart...]
+    }
+
+    private static func upiOperation(_ text: String) -> String? {
+        guard let url = URLComponents(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              url.scheme?.lowercased() == "upi",
+              let operation = url.host?.lowercased(),
+              ["pay", "mandate"].contains(operation),
+              url.path.isEmpty else { return nil }
+        return operation
+    }
+
+    private static func isUPIURL(_ text: String) -> Bool {
+        upiOperation(text) != nil
+    }
+
     private static func appendQueryItem(_ name: String, _ value: String?, to queryItems: inout [URLQueryItem]) {
         guard let value, !value.isEmpty else { return }
         queryItems.append(URLQueryItem(name: name, value: value))
@@ -250,7 +288,7 @@ enum QRContentClassifier {
         let lowercasedText = text.lowercased()
         
         if UPIPaymentDetector.isUPIPayment(text) {
-            return "UPI Payment"
+            return UPIPaymentDetector.isMandate(text) ? "UPI Mandate" : "UPI Payment"
         } else if lowercasedText.hasPrefix("http") {
             return "Web URL"
         } else if lowercasedText.contains("wifi:") {
