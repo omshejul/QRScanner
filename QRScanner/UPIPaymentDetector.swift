@@ -161,7 +161,10 @@ enum UPIPaymentDetector {
             case "Google Pay": prefix = "gpay://upi/mandate"
             case "PhonePe": prefix = "phonepe://mandate"
             case "Paytm": prefix = "paytmmp://mandate"
-            default: return nil
+            case "CRED": prefix = "credpay://upi/mandate"
+            case "BHIM": prefix = "bhim://upi/mandate"
+            case "Amazon Pay": prefix = "amazonpay://upi/mandate"
+            default: prefix = "upi://mandate"
             }
         } else {
             switch app {

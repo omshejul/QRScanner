@@ -8,11 +8,10 @@ struct UPIPaymentDetectorTests {
         precondition(UPIPaymentDetector.isUPIPayment(mandate))
         precondition(QRContentClassifier.displayType(for: mandate) == "UPI Mandate")
         precondition(UPIPaymentDetector.paymentURLString(from: mandate) == mandate)
-        for (app, prefix) in [("Google Pay", "gpay://upi/mandate"), ("PhonePe", "phonepe://mandate"), ("Paytm", "paytmmp://mandate")] {
+        for (app, prefix) in [("Google Pay", "gpay://upi/mandate"), ("PhonePe", "phonepe://mandate"), ("Paytm", "paytmmp://mandate"), ("CRED", "credpay://upi/mandate"), ("BHIM", "bhim://upi/mandate"), ("Amazon Pay", "amazonpay://upi/mandate"), ("WhatsApp", "upi://mandate")] {
             precondition(UPIPaymentDetector.appURLString(from: mandate, app: app) == prefix + query)
             precondition(UPIPaymentDetector.appURLString(from: " \nUPI://MANDATE" + query + "\n", app: app) == prefix + query)
         }
-        precondition(UPIPaymentDetector.appURLString(from: mandate, app: "CRED") == nil)
         let payment = "upi://pay" + query
         precondition(QRContentClassifier.displayType(for: payment) == "UPI Payment")
         for (app, prefix) in [("Google Pay", "gpay://upi/pay"), ("PhonePe", "phonepe://upi/pay"), ("Paytm", "paytmmp://upi/pay"), ("CRED", "credpay://upi/pay"), ("BHIM", "bhim://upi/pay"), ("Amazon Pay", "amazonpay://upi/pay"), ("WhatsApp", "upi://pay")] {

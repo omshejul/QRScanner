@@ -1657,9 +1657,7 @@ struct ActionButtonCenter: View {
 func showUPIAppSelection(for upiLink: String) {
     let alert = UIAlertController(title: "Choose Payment App", message: nil, preferredStyle: .actionSheet)
     
-    let apps = UPIPaymentDetector.isMandate(upiLink)
-        ? ["PhonePe", "Google Pay", "Paytm"]
-        : ["PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
+    let apps = ["PhonePe", "Google Pay", "Paytm", "CRED", "BHIM", "Amazon Pay", "WhatsApp"]
     for app in apps {
         alert.addAction(UIAlertAction(title: app, style: .default, handler: { _ in
             openUPILink(upiLink, with: app)
