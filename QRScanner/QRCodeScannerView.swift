@@ -13,6 +13,7 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
     var completion: (String, AVMetadataObject.ObjectType) -> Void
     var selectedDevice: AVCaptureDevice?
     var shouldInitializeScanner: Bool = true
+    var onCameraChanged: ((AVCaptureDevice) -> Void)?
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -20,6 +21,7 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
     
     func makeUIViewController(context: Context) -> ScannerViewController {
         let scannerViewController = ScannerViewController()
+        scannerViewController.onCameraChanged = onCameraChanged
         scannerViewController.delegate = context.coordinator
         scannerViewController.selectedDevice = selectedDevice
         scannerViewController.shouldInitializeScanner = shouldInitializeScanner
@@ -27,6 +29,7 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {
+        context.coordinator.parent = self
         if uiViewController.selectedDevice?.uniqueID != selectedDevice?.uniqueID {
             uiViewController.switchCamera(to: selectedDevice)
         }
@@ -60,7 +63,7 @@ struct QRCodeScannerView: UIViewControllerRepresentable {
 }
 
 // MARK: - ScannerViewController
-class ScannerViewController: UIViewController {
+class ScannerViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     var captureSession: AVCaptureSession?
     var previewLayer: AVCaptureVideoPreviewLayer?
     weak var delegate: AVCaptureMetadataOutputObjectsDelegate?
@@ -68,6 +71,15 @@ class ScannerViewController: UIViewController {
     var shouldInitializeScanner: Bool = true
     
     private var videoCaptureDevice: AVCaptureDevice?
+    var onCameraChanged: ((AVCaptureDevice) -> Void)?
+    private let sessionQueue = DispatchQueue(label: "scanner.capture", qos: .userInitiated)
+    private var recovery = ScannerRecovery()
+    private var lastSampleTime = -Double.infinity
+    private var lastVisionTime = -Double.infinity
+    private var lastUndecodedQR = -Double.infinity
+    private var wantsRunning = true
+    private var originalFrameDurations: (minimum: CMTime, maximum: CMTime)?
+    private var lastTorchMode: AVCaptureDevice.TorchMode = .off
     private var longPressGesture: UILongPressGestureRecognizer!
     
     override func viewDidLoad() {
@@ -268,12 +280,14 @@ class ScannerViewController: UIViewController {
     }
     
     func setupScanner() {
-        DispatchQueue.global(qos: .userInitiated).async {
+        let requestedDevice = selectedDevice
+        sessionQueue.async {
+            guard self.captureSession == nil else { return }
             let session = AVCaptureSession()
-            session.sessionPreset = .high // Higher resolution for better barcode detection
+            session.sessionPreset = session.canSetSessionPreset(.hd1920x1080) ? .hd1920x1080 : .high
             
             // Use the selected device or fall back to default
-            let videoDevice = self.selectedDevice ?? AVCaptureDevice.default(for: .video)
+            let videoDevice = requestedDevice ?? AVCaptureDevice.default(for: .video)
             guard let device = videoDevice else { return }
             self.videoCaptureDevice = device
             
@@ -329,12 +343,17 @@ class ScannerViewController: UIViewController {
                 return
             }
             
-            DispatchQueue.main.async {
-                self.captureSession = session
-                self.setupPreviewLayer()
+            let frames = AVCaptureVideoDataOutput()
+            frames.alwaysDiscardsLateVideoFrames = true
+            frames.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange]
+            if session.canAddOutput(frames) {
+                session.addOutput(frames)
+                frames.setSampleBufferDelegate(self, queue: self.sessionQueue)
             }
-            
-            session.startRunning()
+            self.configureCamera(device)
+            self.captureSession = session
+            DispatchQueue.main.async { self.setupPreviewLayer() }
+            if self.wantsRunning { session.startRunning() }
         }
     }
     
@@ -349,15 +368,21 @@ class ScannerViewController: UIViewController {
     }
     
     @objc func startScanning() {
-        DispatchQueue.global(qos: .userInitiated).async {
+        sessionQueue.async {
+            self.wantsRunning = true
             if let captureSession = self.captureSession, !captureSession.isRunning {
+                self.recovery = ScannerRecovery()
+                self.lastUndecodedQR = -Double.infinity
+                if let device = self.videoCaptureDevice { self.configureCamera(device) }
                 captureSession.startRunning()
             }
         }
     }
     
     @objc func stopScanning() {
-        DispatchQueue.global(qos: .userInitiated).async {
+        sessionQueue.async {
+            self.wantsRunning = false
+            if let device = self.videoCaptureDevice { self.restoreExposure(device) }
             if let captureSession = self.captureSession, captureSession.isRunning {
                 captureSession.stopRunning()
             }
@@ -375,24 +400,139 @@ class ScannerViewController: UIViewController {
     }
     
     func switchCamera(to device: AVCaptureDevice?) {
-        guard let newDevice = device,
-              videoCaptureDevice?.uniqueID != newDevice.uniqueID,
-              let session = captureSession else { return }
-        
+        guard let device else { return }
+        selectedDevice = device
+        sessionQueue.async {
+            self.recovery = ScannerRecovery()
+            self.replaceCamera(with: device)
+        }
+    }
+
+    private func replaceCamera(with device: AVCaptureDevice) {
+        guard let session = captureSession,
+              videoCaptureDevice?.uniqueID != device.uniqueID,
+              let input = try? AVCaptureDeviceInput(device: device) else { return }
+        if let old = videoCaptureDevice { restoreExposure(old) }
+        let previous = session.inputs
         session.beginConfiguration()
-        
-        // Remove existing input
-        session.inputs.forEach { session.removeInput($0) }
-        
-        // Add new input for the selected device
-        if let newInput = try? AVCaptureDeviceInput(device: newDevice) {
-            if session.canAddInput(newInput) {
-                session.addInput(newInput)
-                self.videoCaptureDevice = newDevice
-                self.selectedDevice = newDevice
+        previous.forEach { session.removeInput($0) }
+        if session.canAddInput(input) {
+            session.addInput(input)
+            videoCaptureDevice = device
+            configureCamera(device)
+            lastSampleTime = -Double.infinity
+            lastVisionTime = -Double.infinity
+            lastUndecodedQR = -Double.infinity
+            DispatchQueue.main.async {
+                self.selectedDevice = device
+                self.onCameraChanged?(device)
+            }
+        } else {
+            previous.filter { session.canAddInput($0) }.forEach { session.addInput($0) }
+        }
+        session.commitConfiguration()
+    }
+
+    private func configureCamera(_ device: AVCaptureDevice) {
+        guard (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+        if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
+        lastTorchMode = device.torchMode
+    }
+
+    private func restoreExposure(_ device: AVCaptureDevice) {
+        guard (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
+        if let original = originalFrameDurations {
+            device.activeVideoMinFrameDuration = original.minimum
+            device.activeVideoMaxFrameDuration = original.maximum
+            originalFrameDurations = nil
+        }
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        let time = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+        guard wantsRunning, let device = videoCaptureDevice,
+              time - lastSampleTime >= 0.025,
+              let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        lastSampleTime = time
+        if time - lastVisionTime >= 0.5 {
+            lastVisionTime = time
+            let request = VNDetectBarcodesRequest()
+            request.symbologies = [.qr, .microQR]
+            if (try? VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])) != nil {
+                if let code = request.results?.first(where: { $0.payloadStringValue != nil }), let value = code.payloadStringValue {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let coordinator = self?.delegate as? QRCodeScannerView.Coordinator else { return }
+                        coordinator.parent.completion(value, code.symbology == .microQR ? .microQR : .qr)
+                    }
+                    return
+                }
+                if request.results?.isEmpty == false { lastUndecodedQR = time }
             }
         }
-        
-        session.commitConfiguration()
+        if device.torchMode != lastTorchMode {
+            lastTorchMode = device.torchMode
+            recovery.resetExposure(at: time)
+            restoreExposure(device)
+        }
+        guard device.torchMode == .off, CVPixelBufferGetPlaneCount(buffer) > 0 else { return }
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        guard let base = CVPixelBufferGetBaseAddressOfPlane(buffer, 0) else {
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            return
+        }
+        let bytes = base.assumingMemoryBound(to: UInt8.self)
+        let width = CVPixelBufferGetWidthOfPlane(buffer, 0)
+        let height = CVPixelBufferGetHeightOfPlane(buffer, 0)
+        let stride = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
+        var patches: [Double] = []
+        for row in 0..<4 {
+            for col in 0..<4 {
+                var sum = 0.0
+                for y in 0..<4 {
+                    for x in 0..<4 {
+                        let px = (col * 4 + x) * width / 16
+                        let py = (row * 4 + y) * height / 16
+                        sum += Double(bytes[py * stride + px]) / 255
+                    }
+                }
+                patches.append(sum / 16)
+            }
+        }
+        CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+        guard let action = recovery.observe(patches, at: time, undecodedQR: time - lastUndecodedQR < 0.8) else { return }
+        switch action {
+        case .automatic:
+            restoreExposure(device)
+        case .ultraWide:
+            restoreExposure(device)
+            if device.position == .back, device.deviceType == .builtInWideAngleCamera,
+               let ultraWide = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) {
+                replaceCamera(with: ultraWide)
+            }
+        case .exposure(let duration):
+            guard device.isExposureModeSupported(.custom),
+                  duration >= CMTimeGetSeconds(device.activeFormat.minExposureDuration),
+                  duration <= CMTimeGetSeconds(device.activeFormat.maxExposureDuration),
+                  let iso = ScannerRecovery.compensatedISO(currentISO: Double(device.iso), currentDuration: CMTimeGetSeconds(device.exposureDuration), duration: duration, minimum: Double(device.activeFormat.minISO), maximum: Double(device.activeFormat.maxISO)),
+                  (try? device.lockForConfiguration()) != nil else {
+                recovery.resetExposure(at: time)
+                restoreExposure(device)
+                return
+            }
+            if originalFrameDurations == nil {
+                originalFrameDurations = (device.activeVideoMinFrameDuration, device.activeVideoMaxFrameDuration)
+            }
+            device.setExposureModeCustom(duration: CMTime(seconds: duration, preferredTimescale: 1_000_000), iso: Float(iso), completionHandler: nil)
+            device.unlockForConfiguration()
+        }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        previewLayer?.frame = view.bounds
     }
 }
