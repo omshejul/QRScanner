@@ -89,7 +89,8 @@ struct QRCodeScannerContainer: View {
                 if !isShowingResult {
                     QRCodeScannerView(completion: handleDetectedCode,
                                       selectedDevice: selectedLens,
-                                      shouldInitializeScanner: shouldInitializeScanner)
+                                      shouldInitializeScanner: shouldInitializeScanner,
+                                      onCameraChanged: { selectedLens = $0 })
                     .edgesIgnoringSafeArea(.all)
                     
                     // ✅ Scanner Overlay with L-Shaped Corners
@@ -362,6 +363,7 @@ struct QRCodeScannerContainer: View {
     }
 
     private func handleDetectedCode(_ code: String, type: AVMetadataObject.ObjectType) {
+        guard !isShowingResult, !isOpeningAuthenticator else { return }
         if let authenticatorURL = AuthenticatorCode.url(from: code) {
             openAuthenticator(authenticatorURL)
             return
